@@ -19,8 +19,8 @@ void Platform_DestroyWindow(PlatformWindow *window) {
   free(window);
 }
 
-void Platform_GetWindowSize(const PlatformWindow *window, int *width, int *height) {
-  SDL_GetWindowSize(window->sdl_window, width, height);
+bool Platform_GetWindowSize(const PlatformWindow *window, int *width, int *height) {
+  return SDL_GetWindowSize(window->sdl_window, width, height);
 }
 
 SDL_Window *platform_window_get_native_handle(PlatformWindow *window) { // NOLINT (matches function signature, should absolutely not be const)

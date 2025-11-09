@@ -7,9 +7,9 @@ endif()
 
 # Headers for the platform API
 set(PLATFORM_HEADERS
-		include/platform.h
-		include/platform_renderer.h
-		include/platform_window.h
+	include/platform.h
+	include/platform_renderer.h
+	include/platform_window.h
 )
 
 # =======================
@@ -19,10 +19,10 @@ set(PLATFORM_LIB_SOURCES "")
 
 if(PLATFORM_BACKEND STREQUAL "SDL")
 	list(APPEND PLATFORM_LIB_SOURCES
-			src/sdl/platform_renderer_sdl.c
-			src/sdl/platform_sdl.c
-			src/sdl/platform_sdl_internal.h
-			src/sdl/platform_window_sdl.c
+		src/sdl/platform_renderer_sdl.c
+		src/sdl/platform_sdl.c
+		src/sdl/platform_sdl_internal.h
+		src/sdl/platform_window_sdl.c
 	)
 
 	set(BUILD_SHARED_LIBS OFF)
@@ -41,8 +41,8 @@ target_include_directories(platform_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inclu
 target_link_libraries(platform_lib PUBLIC ${PLATFORM_LIBS})
 
 target_compile_definitions(platform_lib PUBLIC
-		$<$<CONFIG:Debug>:FLIGHT_ENABLE_LOGGING>
-		$<$<CONFIG:Release>:FLIGHT_ENABLE_LOGGING>
+	$<$<CONFIG:Debug>:FLIGHT_ENABLE_LOGGING>
+	$<$<CONFIG:Release>:FLIGHT_ENABLE_LOGGING>
 )
 
 # =======================

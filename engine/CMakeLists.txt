@@ -1,12 +1,21 @@
 project(engine LANGUAGES C)
 
-add_library(${PROJECT_NAME} STATIC
-        src/engine.c include/engine.h
+add_library(engine STATIC
+    src/engine.c include/engine.h
 )
 
-# TODO: Differentiate between linked and hot-reload versions of "game" here.
-# TODO: Add shared library.
-target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(engine
-        PUBLIC platform_lib
+set(ENGINE_LIBS
+	PUBLIC platform_lib
+	PRIVATE shared
 )
+
+if(NOT ${ENABLE_HOT_RELOAD})
+	list(APPEND ENGINE_LIBS
+		PRIVATE game
+	)
+else()
+	target_compile_definitions(engine PRIVATE ENABLE_HOT_RELOAD)
+endif()
+
+target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(engine ${ENGINE_LIBS})

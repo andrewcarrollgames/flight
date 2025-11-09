@@ -1,26 +1,280 @@
 {
-  "version": 6,
-  "configurePresets": [
-    {
-      "name": "debug",
-      "displayName": "Debug",
-      "generator": "Ninja",
-      "binaryDir": "build/debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin",
-        "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin",
-        "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin"
-      }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "flight-debug",
-      "displayName": "Flight Debug",
-      "configurePreset": "debug",
-      "configuration": "Debug",
-      "targets": [ "flight" ]
-    }
-  ]
+    "version": 6,
+    "configurePresets": [{
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja",
+            "cacheVariables": {
+                "PLATFORM_BACKEND": "SDL",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        }, {
+            "name": "windows-base",
+            "hidden": true,
+            "inherits": "base",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl",
+                "CMAKE_CXX_COMPILER": "cl"
+            }
+        }, {
+            "name": "linux-base",
+            "hidden": true,
+            "inherits": "base",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            },
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        }, {
+            "name": "macos-base",
+            "hidden": true,
+            "inherits": "base",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            },
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        }, {
+            "name": "emscripten-base",
+            "hidden": true,
+            "inherits": "base",
+            "generator": "Ninja",
+            "condition": {
+                "type": "notEquals",
+                "lhs": "$env{EMSDK}",
+                "rhs": ""
+            },
+            "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "emcc",
+                "CMAKE_CXX_COMPILER": "em++",
+                "PLATFORM_BACKEND": "SDL"
+            }
+        }, {
+            "name": "debug",
+            "displayName": "Debug",
+            "binaryDir": "${sourceDir}/build/debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin",
+                "ENABLE_HOT_RELOAD": "OFF",
+                "EXECUTABLE_NAME": "flight_debug"
+            }
+        }, {
+            "name": "debug-hotreload",
+            "displayName": "Debug with Hot Reload",
+            "binaryDir": "${sourceDir}/build/debug-hotreload",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/debug-hotreload/bin",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/debug-hotreload/bin",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/debug-hotreload/bin",
+                "ENABLE_HOT_RELOAD": "ON",
+                "EXECUTABLE_NAME": "flight_debug_hr"
+            }
+        }, {
+            "name": "release",
+            "displayName": "Release",
+            "binaryDir": "${sourceDir}/build/release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/release/bin",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/release/bin",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/release/bin",
+                "ENABLE_HOT_RELOAD": "OFF",
+                "EXECUTABLE_NAME": "flight"
+            }
+        }, {
+            "name": "relwithdebinfo",
+            "displayName": "Release with Debug Info",
+            "binaryDir": "${sourceDir}/build/relwithdebinfo",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/bin",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/bin",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/bin",
+                "ENABLE_HOT_RELOAD": "ON",
+                "EXECUTABLE_NAME": "flight_dev"
+            }
+        }, {
+            "name": "minsizerel",
+            "displayName": "Minimum Size Release",
+            "binaryDir": "${sourceDir}/build/minsizerel",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "MinSizeRel",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/minsizerel/bin",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/minsizerel/bin",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/minsizerel/bin",
+                "ENABLE_HOT_RELOAD": "OFF",
+                "EXECUTABLE_NAME": "flight"
+            }
+        }, {
+            "name": "windows-debug",
+            "displayName": "Windows Debug",
+            "inherits": ["windows-base", "debug"]
+        }, {
+            "name": "windows-debug-hotreload",
+            "displayName": "Windows Debug (Hot Reload)",
+            "inherits": ["windows-base", "debug-hotreload"]
+        }, {
+            "name": "windows-release",
+            "displayName": "Windows Release",
+            "inherits": ["windows-base", "release"]
+        }, {
+            "name": "windows-relwithdebinfo",
+            "displayName": "Windows Dev",
+            "inherits": ["windows-base", "relwithdebinfo"]
+        }, {
+            "name": "windows-minsizerel",
+            "displayName": "Windows MinSizeRel",
+            "inherits": ["windows-base", "minsizerel"]
+        }, {
+            "name": "linux-debug",
+            "displayName": "Linux Debug",
+            "inherits": ["linux-base", "debug"]
+        }, {
+            "name": "linux-debug-hotreload",
+            "displayName": "Linux Debug (Hot Reload)",
+            "inherits": ["linux-base", "debug-hotreload"]
+        }, {
+            "name": "linux-release",
+            "displayName": "Linux Release",
+            "inherits": ["linux-base", "release"]
+        }, {
+            "name": "linux-relwithdebinfo",
+            "displayName": "Linux Dev",
+            "inherits": ["linux-base", "relwithdebinfo"]
+        }, {
+            "name": "linux-minsizerel",
+            "displayName": "Linux MinSizeRel",
+            "inherits": ["linux-base", "minsizerel"]
+        }, {
+            "name": "macos-debug",
+            "displayName": "macOS Debug",
+            "inherits": ["macos-base", "debug"]
+        }, {
+            "name": "macos-debug-hotreload",
+            "displayName": "macOS Debug (Hot Reload)",
+            "inherits": ["macos-base", "debug-hotreload"]
+        }, {
+            "name": "macos-release",
+            "displayName": "macOS Release",
+            "inherits": ["macos-base", "release"]
+        }, {
+            "name": "macos-relwithdebinfo",
+            "displayName": "macOS Dev",
+            "inherits": ["macos-base", "relwithdebinfo"]
+        }, {
+            "name": "macos-minsizerel",
+            "displayName": "macOS MinSizeRel",
+            "inherits": ["macos-base", "minsizerel"]
+        }, {
+            "name": "emscripten-debug",
+            "displayName": "Emscripten Debug",
+            "inherits": ["emscripten-base", "debug"],
+            "cacheVariables": {
+                "ENABLE_HOT_RELOAD": "OFF"
+            }
+        }, {
+            "name": "emscripten-release",
+            "displayName": "Emscripten Release",
+            "inherits": ["emscripten-base", "release"]
+        }, {
+            "name": "emscripten-minsizerel",
+            "displayName": "Emscripten MinSizeRel",
+            "inherits": ["emscripten-base", "minsizerel"]
+        }
+    ],
+    "buildPresets": [{
+            "name": "windows-debug",
+            "displayName": "Windows Debug Build",
+            "configurePreset": "windows-debug",
+            "configuration": "Debug"
+        }, {
+            "name": "windows-release",
+            "displayName": "Windows Release Build",
+            "configurePreset": "windows-release",
+            "configuration": "Release"
+        }, {
+            "name": "windows-relwithdebinfo",
+            "displayName": "Windows Dev Build",
+            "configurePreset": "windows-relwithdebinfo",
+            "configuration": "RelWithDebInfo"
+        }, {
+            "name": "windows-minsizerel",
+            "displayName": "Windows MinSizeRel Build",
+            "configurePreset": "windows-minsizerel",
+            "configuration": "MinSizeRel"
+        }, {
+            "name": "linux-debug",
+            "displayName": "Linux Debug Build",
+            "configurePreset": "linux-debug",
+            "configuration": "Debug"
+        }, {
+            "name": "linux-release",
+            "displayName": "Linux Release Build",
+            "configurePreset": "linux-release",
+            "configuration": "Release"
+        }, {
+            "name": "linux-relwithdebinfo",
+            "displayName": "Linux Dev Build",
+            "configurePreset": "linux-relwithdebinfo",
+            "configuration": "RelWithDebInfo"
+        }, {
+            "name": "linux-minsizerel",
+            "displayName": "Linux MinSizeRel Build",
+            "configurePreset": "linux-minsizerel",
+            "configuration": "MinSizeRel"
+        }, {
+            "name": "macos-debug",
+            "displayName": "macOS Debug Build",
+            "configurePreset": "macos-debug",
+            "configuration": "Debug"
+        }, {
+            "name": "macos-release",
+            "displayName": "macOS Release Build",
+            "configurePreset": "macos-release",
+            "configuration": "Release"
+        }, {
+            "name": "macos-relwithdebinfo",
+            "displayName": "macOS Dev Build",
+            "configurePreset": "macos-relwithdebinfo",
+            "configuration": "RelWithDebInfo"
+        }, {
+            "name": "macos-minsizerel",
+            "displayName": "macOS MinSizeRel Build",
+            "configurePreset": "macos-minsizerel",
+            "configuration": "MinSizeRel"
+        }, {
+            "name": "emscripten-debug",
+            "displayName": "Emscripten Debug Build",
+            "configurePreset": "emscripten-debug",
+            "configuration": "Debug"
+        }, {
+            "name": "emscripten-release",
+            "displayName": "Emscripten Release Build",
+            "configurePreset": "emscripten-release",
+            "configuration": "Release"
+        }, {
+            "name": "emscripten-minsizerel",
+            "displayName": "Emscripten MinSizeRel Build",
+            "configurePreset": "emscripten-minsizerel",
+            "configuration": "MinSizeRel"
+        }
+    ]
 }
