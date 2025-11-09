@@ -1,0 +1,26 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "debug",
+      "displayName": "Debug",
+      "generator": "Ninja",
+      "binaryDir": "build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin",
+        "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin",
+        "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "flight-debug",
+      "displayName": "Flight Debug",
+      "configurePreset": "debug",
+      "configuration": "Debug",
+      "targets": [ "flight" ]
+    }
+  ]
+}

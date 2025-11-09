@@ -1,0 +1,7 @@
+BasedOnStyle: LLVM
+
+# No column limit (or a large value to effectively disable)
+ColumnLimit: 0
+
+IndentCaseLabels: true
+AllowShortCaseLabelsOnASingleLine: false
