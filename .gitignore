@@ -56,3 +56,25 @@ dkms.conf
 
 #IDE specific files
 .idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Compiled files
+*.wasm
+*.js
+*.html
+
+# Build directories
+build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+
+# Emscripten (if installed locally)
+extern/emsdk/
+
+# OS
+.DS_Store
+Thumbs.db
