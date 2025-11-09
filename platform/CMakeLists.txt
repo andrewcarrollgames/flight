@@ -64,6 +64,17 @@ endif()
 # Executable name from game
 set_target_properties(platform PROPERTIES OUTPUT_NAME ${EXECUTABLE_NAME})
 
+# Add Emscripten-specific settings
+if(EMSCRIPTEN)
+	# Generate HTML file
+	set_target_properties(platform PROPERTIES SUFFIX ".html")
+
+	# Optional: Customize the shell
+	# target_link_options(platform PRIVATE
+	#     "SHELL:--shell-file ${CMAKE_SOURCE_DIR}/path/to/custom_shell.html"
+	# )
+endif()
+
 # Link the executable to both the platform library AND engine
 target_link_libraries(platform 
 	PRIVATE platform_lib   # Platform implementation

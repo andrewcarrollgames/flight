@@ -1,5 +1,6 @@
 #include "platform_sdl_internal.h"
 #include "platform_window.h"
+#include <stdlib.h>
 #include <SDL3/SDL.h>
 
 PlatformWindow *Platform_CreateWindow(const char *title, int width, int height) {

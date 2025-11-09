@@ -59,8 +59,6 @@
             },
             "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
             "cacheVariables": {
-                "CMAKE_C_COMPILER": "emcc",
-                "CMAKE_CXX_COMPILER": "em++",
                 "PLATFORM_BACKEND": "SDL"
             }
         }, {
@@ -186,92 +184,116 @@
         }, {
             "name": "emscripten-debug",
             "displayName": "Emscripten Debug",
-            "inherits": ["emscripten-base", "debug"],
+            "inherits": ["emscripten-base"],
+            "binaryDir": "${sourceDir}/build/emscripten-debug",
             "cacheVariables": {
-                "ENABLE_HOT_RELOAD": "OFF"
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/emscripten-debug/bin",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/emscripten-debug/bin",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/emscripten-debug/bin",
+                "ENABLE_HOT_RELOAD": "OFF",
+                "EXECUTABLE_NAME": "flight_debug"
             }
         }, {
             "name": "emscripten-release",
             "displayName": "Emscripten Release",
-            "inherits": ["emscripten-base", "release"]
+            "inherits": ["emscripten-base"],
+            "binaryDir": "${sourceDir}/build/emscripten-release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/emscripten-release/bin",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/emscripten-release/bin",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/emscripten-release/bin",
+                "ENABLE_HOT_RELOAD": "OFF",
+                "EXECUTABLE_NAME": "flight"
+            }
         }, {
             "name": "emscripten-minsizerel",
             "displayName": "Emscripten MinSizeRel",
-            "inherits": ["emscripten-base", "minsizerel"]
+            "inherits": ["emscripten-base"],
+            "binaryDir": "${sourceDir}/build/emscripten-minsizerel",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "MinSizeRel",
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/emscripten-minsizerel/bin",
+                "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/emscripten-minsizerel/bin",
+                "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/emscripten-minsizerel/bin",
+                "ENABLE_HOT_RELOAD": "OFF",
+                "EXECUTABLE_NAME": "flight"
+            }
         }
     ],
     "buildPresets": [{
-            "name": "windows-debug",
+            "name": "build-windows-debug",
             "displayName": "Windows Debug Build",
             "configurePreset": "windows-debug",
             "configuration": "Debug"
         }, {
-            "name": "windows-release",
+            "name": "build-windows-release",
             "displayName": "Windows Release Build",
             "configurePreset": "windows-release",
             "configuration": "Release"
         }, {
-            "name": "windows-relwithdebinfo",
+            "name": "build-windows-relwithdebinfo",
             "displayName": "Windows Dev Build",
             "configurePreset": "windows-relwithdebinfo",
             "configuration": "RelWithDebInfo"
         }, {
-            "name": "windows-minsizerel",
+            "name": "build-windows-minsizerel",
             "displayName": "Windows MinSizeRel Build",
             "configurePreset": "windows-minsizerel",
             "configuration": "MinSizeRel"
         }, {
-            "name": "linux-debug",
+            "name": "build-linux-debug",
             "displayName": "Linux Debug Build",
             "configurePreset": "linux-debug",
             "configuration": "Debug"
         }, {
-            "name": "linux-release",
+            "name": "build-linux-release",
             "displayName": "Linux Release Build",
             "configurePreset": "linux-release",
             "configuration": "Release"
         }, {
-            "name": "linux-relwithdebinfo",
+            "name": "build-linux-relwithdebinfo",
             "displayName": "Linux Dev Build",
             "configurePreset": "linux-relwithdebinfo",
             "configuration": "RelWithDebInfo"
         }, {
-            "name": "linux-minsizerel",
+            "name": "build-linux-minsizerel",
             "displayName": "Linux MinSizeRel Build",
             "configurePreset": "linux-minsizerel",
             "configuration": "MinSizeRel"
         }, {
-            "name": "macos-debug",
+            "name": "build-macos-debug",
             "displayName": "macOS Debug Build",
             "configurePreset": "macos-debug",
             "configuration": "Debug"
         }, {
-            "name": "macos-release",
+            "name": "build-macos-release",
             "displayName": "macOS Release Build",
             "configurePreset": "macos-release",
             "configuration": "Release"
         }, {
-            "name": "macos-relwithdebinfo",
+            "name": "build-macos-relwithdebinfo",
             "displayName": "macOS Dev Build",
             "configurePreset": "macos-relwithdebinfo",
             "configuration": "RelWithDebInfo"
         }, {
-            "name": "macos-minsizerel",
+            "name": "build-macos-minsizerel",
             "displayName": "macOS MinSizeRel Build",
             "configurePreset": "macos-minsizerel",
             "configuration": "MinSizeRel"
         }, {
-            "name": "emscripten-debug",
+            "name": "build-emscripten-debug",
             "displayName": "Emscripten Debug Build",
             "configurePreset": "emscripten-debug",
             "configuration": "Debug"
         }, {
-            "name": "emscripten-release",
+            "name": "build-emscripten-release",
             "displayName": "Emscripten Release Build",
             "configurePreset": "emscripten-release",
             "configuration": "Release"
         }, {
-            "name": "emscripten-minsizerel",
+            "name": "build-emscripten-minsizerel",
             "displayName": "Emscripten MinSizeRel Build",
             "configurePreset": "emscripten-minsizerel",
             "configuration": "MinSizeRel"
