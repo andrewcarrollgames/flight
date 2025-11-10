@@ -1,3 +1,6 @@
 [submodule "platform/extern/SDL"]
 	path = platform/extern/SDL
 	url = https://github.com/libsdl-org/SDL
+[submodule "engine/extern/cr"]
+	path = engine/extern/cr
+	url = https://github.com/fungos/cr

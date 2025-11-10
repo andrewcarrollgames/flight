@@ -27,7 +27,7 @@ if(PLATFORM_BACKEND STREQUAL "SDL")
 
 	set(BUILD_SHARED_LIBS OFF)
 	set(SDL_SHARED OFF CACHE INTERNAL "")
-	set(SDL_STATIC ON CACHE INTERNAL "Enable PIC for static libraries" FORCE)
+	#set(SDL_STATIC ON CACHE INTERNAL "Enable PIC for static libraries" FORCE)
 	add_subdirectory(extern/SDL)
 
 	set(PLATFORM_LIBS SDL3::SDL3)

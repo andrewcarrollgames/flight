@@ -14,6 +14,18 @@ if(NOT ${ENABLE_HOT_RELOAD})
 		PRIVATE game
 	)
 else()
+	message(STATUS "Adding cr to support hot reload.")
+	add_subdirectory(extern/cr/cr EXCLUDE_FROM_ALL)
+
+	# Add CR directory
+	message(STATUS "crux/src: Adding cr includes.")
+	target_include_directories(${PROJECT_NAME} PRIVATE extern/cr/cr)
+
+	message(STATUS "crux/src: Linking cr.")
+	list(APPEND ENGINE_LIBS
+		PRIVATE cr
+	)
+
 	target_compile_definitions(engine PRIVATE ENABLE_HOT_RELOAD)
 endif()
 
