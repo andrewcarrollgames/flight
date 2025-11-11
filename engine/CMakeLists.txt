@@ -1,11 +1,11 @@
 project(engine LANGUAGES C)
 
 add_library(engine STATIC
-    src/engine.c include/engine.h
+    src/engine.c
 )
 
 set(ENGINE_LIBS
-	PUBLIC platform_lib
+	PRIVATE platform_lib
 	PRIVATE shared
 )
 

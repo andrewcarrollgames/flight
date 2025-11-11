@@ -2,20 +2,23 @@
 #include "platform.h"
 #include "platform_renderer.h"
 #include "platform_window.h"
+#include "plugin_api.h"
 #include <stdlib.h>
 
 #ifndef ENABLE_HOT_RELOAD
 #include "game.h"
-#include "game_state.h"
 
-// TODO: (ARC) Honestly may not need this? We can probably just send plugin_state (once plugin api is done).
 // In case of hot reloading, this persists across reload boundaries.
 // In "normal" builds (where game is statically linked), it serves as a place to hold the active data for the simulation.
-static GameState *gameState = NULL;
+// Note: this is allocated/freed in "game" code, not anywhere else.
+static void *gameState = NULL;
 #endif
 
 static PlatformWindow *mainWindow = NULL;
 static PlatformRenderer *mainRenderer = NULL;
+
+uint64_t prevFrameTimeNS;
+const float nanoSecondsToSeconds = (1.0f / 1000000000.0f);
 
 bool Engine_Initialize(void) {
   Platform_Log("Engine Initializing.");
@@ -32,14 +35,13 @@ bool Engine_Initialize(void) {
   }
 
 #ifndef ENABLE_HOT_RELOAD
-  gameState = malloc(sizeof(GameState));
-  if (!gameState)  {
-    Platform_DestroyRenderer(mainRenderer);
-    Platform_DestroyWindow(mainWindow);
+  if (!Game_Initialize(&gameState)) {
     return false;
   }
 
-  if (!Game_Initialize(gameState)) {
+  if (!gameState) {
+    Platform_DestroyRenderer(mainRenderer);
+    Platform_DestroyWindow(mainWindow);
     return false;
   }
 #endif
@@ -48,15 +50,15 @@ bool Engine_Initialize(void) {
 }
 
 void Engine_Update(void) {
-  Platform_Log("Engine Updating.");
+  const uint64_t currentTimeNS = Platform_GetTicksNS();
+  const float deltaTime = (float)(currentTimeNS - prevFrameTimeNS) * nanoSecondsToSeconds;
+  prevFrameTimeNS = currentTimeNS;
 #ifndef ENABLE_HOT_RELOAD
-  Game_Update(gameState);
+  Game_Update(gameState, deltaTime);
 #endif
 }
 
 void Engine_Render(void) {
-  Platform_Log("Engine Rendering.");
-
   Platform_RendererClear(mainRenderer);
   Platform_RendererPresent(mainRenderer);
 }
@@ -76,8 +78,7 @@ void Engine_Shutdown(void) {
 
 #ifndef ENABLE_HOT_RELOAD
   if (gameState) {
-    Game_Shutdown(gameState);
-    free(gameState);
+    Game_Shutdown(&gameState);
   }
 #endif
 }

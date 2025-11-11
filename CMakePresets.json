@@ -106,7 +106,7 @@
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/bin",
                 "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/bin",
                 "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/bin",
-                "ENABLE_HOT_RELOAD": "ON",
+                "ENABLE_HOT_RELOAD": "OFF",
                 "EXECUTABLE_NAME": "flight_dev"
             }
         }, {

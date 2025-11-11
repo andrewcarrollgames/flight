@@ -6,11 +6,7 @@ if(NOT PLATFORM_BACKEND)
 endif()
 
 # Headers for the platform API
-set(PLATFORM_HEADERS
-	include/platform.h
-	include/platform_renderer.h
-	include/platform_window.h
-)
+set(PLATFORM_HEADERS "")
 
 # =======================
 # PART 1: Platform Library (the API implementation)
@@ -27,14 +23,25 @@ if(PLATFORM_BACKEND STREQUAL "SDL")
 
 	set(BUILD_SHARED_LIBS OFF)
 	set(SDL_SHARED OFF CACHE INTERNAL "")
-	#set(SDL_STATIC ON CACHE INTERNAL "Enable PIC for static libraries" FORCE)
 	add_subdirectory(extern/SDL)
 
-	set(PLATFORM_LIBS SDL3::SDL3)
+	set(PLATFORM_LIBS PUBLIC SDL3::SDL3 PRIVATE shared)
 endif()
 
 # Create the platform library (Engine will link this)
 add_library(platform_lib STATIC ${PLATFORM_LIB_SOURCES} ${PLATFORM_HEADERS})
+
+# Export symbols for the plugins, which will include platform-lib
+if(${ENABLE_HOT_RELOAD})
+	if(UNIX)
+		target_link_options(platform_lib PRIVATE "-rdynamic")
+	elseif(WIN32)
+		set_target_properties(platform_lib PROPERTIES
+			ENABLE_EXPORTS ON
+			WINDOWS_EXPORT_ALL_SYMBOLS ON
+		)
+	endif()
+endif()
 
 target_include_directories(platform_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -42,7 +49,7 @@ target_link_libraries(platform_lib PUBLIC ${PLATFORM_LIBS})
 
 target_compile_definitions(platform_lib PUBLIC
 	$<$<CONFIG:Debug>:FLIGHT_ENABLE_LOGGING>
-	$<$<CONFIG:Release>:FLIGHT_ENABLE_LOGGING>
+	$<$<CONFIG:RelWithDebInfo>:FLIGHT_ENABLE_LOGGING>
 )
 
 # =======================
@@ -56,6 +63,18 @@ endif()
 
 # Create the executable
 add_executable(platform WIN32 ${PLATFORM_EXE_SOURCES})
+
+# Export symbols for the plugins, which will include platform-lib
+if(${ENABLE_HOT_RELOAD})
+	if(UNIX)
+		target_link_options(platform PRIVATE "-rdynamic")
+	elseif(WIN32)
+		set_target_properties(platform PROPERTIES
+				ENABLE_EXPORTS ON
+				WINDOWS_EXPORT_ALL_SYMBOLS ON
+		)
+	endif()
+endif()
 
 if(PLATFORM_BACKEND STREQUAL "SDL")
 	target_compile_definitions(platform PRIVATE SDL_MAIN_USE_CALLBACKS)
@@ -76,7 +95,8 @@ if(EMSCRIPTEN)
 endif()
 
 # Link the executable to both the platform library AND engine
-target_link_libraries(platform 
-	PRIVATE platform_lib   # Platform implementation
-	PRIVATE engine         # Engine code
+target_link_libraries(platform
+	PRIVATE shared			# Shared interface
+	PRIVATE platform_lib	# Platform implementation
+	PRIVATE engine			# Engine code
 )

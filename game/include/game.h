@@ -7,12 +7,11 @@
 extern "C" {
 #endif
 
-// forward declarations
-typedef struct GameState GameState;
-
-bool Game_Initialize(GameState *gameState);
-void Game_Update(GameState *gameState);
-void Game_Shutdown(GameState *gameState);
+// PluginAPI Implementation (plugin_api.h)
+bool Game_Initialize(void **state);
+void Game_Update(void *state, float delta_time);
+void Game_Shutdown(void **state);
+// End PluginAPI
 
 #ifdef __cplusplus
 }

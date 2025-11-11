@@ -35,3 +35,7 @@ const char *Platform_GetBasePath() {
 const char *Platform_GetPrefPath(const char *org, const char *app) {
   return SDL_GetPrefPath(org, app);
 }
+
+uint64_t Platform_GetTicksNS() {
+  return SDL_GetTicksNS();
+}

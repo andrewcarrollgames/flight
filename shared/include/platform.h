@@ -1,6 +1,8 @@
 #ifndef FLIGHT_PLATFORM_H
 #define FLIGHT_PLATFORM_H
 
+#include <stdint.h>
+
 /*
 Memory: platform_alloc, platform_free, platform_realloc (wrapper around your allocator strategy)
 Logging: platform_log, platform_log_error, platform_log_warn (with printf-style formatting)
@@ -25,6 +27,7 @@ void Platform_LogError(const char *fmt, ...);
 void Platform_LogWarning(const char *fmt, ...);
 const char *Platform_GetBasePath();
 const char *Platform_GetPrefPath(const char *org, const char *app);
+uint64_t Platform_GetTicksNS();
 
 #ifdef __cplusplus
 }
