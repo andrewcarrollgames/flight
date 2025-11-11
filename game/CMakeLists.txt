@@ -1,15 +1,14 @@
 project(game LANGUAGES C)
 
+set(GAME_FILES
+	src/game.c include/game.h
+	include/game_state.h
+)
+
 if(ENABLE_HOT_RELOAD)
-	add_library(game SHARED
-		src/game.c
-		include/game.h
-	)
+	add_library(game SHARED ${GAME_FILES})
 else()
-	add_library(game STATIC
-		src/game.c
-		include/game.h
-	)
+	add_library(game STATIC ${GAME_FILES})
 endif()
 
 target_include_directories(game PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
