@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #ifndef FLIGHT_PLATFORM_H
 #define FLIGHT_PLATFORM_H
 

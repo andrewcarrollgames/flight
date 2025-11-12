@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #ifndef FLIGHT_PLATFORM_SDL_INTERNAL_H
 #define FLIGHT_PLATFORM_SDL_INTERNAL_H
 
@@ -13,6 +16,6 @@ typedef struct PlatformRenderer {
 } PlatformRenderer;
 
 /* Internal helper functions */
-SDL_Window *platform_window_get_native_handle(PlatformWindow *window);
+SDL_Window *Platform_GetNativeWindowHandle(PlatformWindow *window);
 
 #endif

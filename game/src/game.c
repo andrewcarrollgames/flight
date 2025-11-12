@@ -1,46 +1,112 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #include "game.h"
 #include "game_state.h"
 #include "platform.h"
+#include "platform_renderer.h"
+#include "platform_window.h"
+#include "plugin_api.h"
 #include <stdlib.h>
 
-uint32_t numUpdates = 0;
-float accumulatedSeconds = 0.0f;
-float fps = 0.0f;
-const float fpsUpdateFrequency = 2.0f;
+static PluginAPI g_game_plugin = {
+  .version = 1,
+  .name = "Flight Game",
+  .init = Game_Initialize,
+  .update = Game_Update,
+  .render = Game_Render,
+  .shutdown = Game_Shutdown
+};
 
 bool Game_Initialize(void **state) {
   // TODO: (ARC): Use Arenas from shared/platform for this allocation.
-  GameState* gameState = (GameState*)malloc(sizeof(GameState));
+  GameState *gameState = (GameState *)malloc(sizeof(GameState));
   *state = gameState;
 
   if (gameState) {
     Platform_Log("Game Initializing.");
     gameState->isRunning = true;
+
+    const int32_t logicalPresentationWidth = 640;
+    const int32_t logicalPresentationHeight = 360;
+
+    // TODO: (ARC) Make a runtime function in platform to GetOSType then select default renderer?
+    // Maybe add something to the CMakePresets config to set default renderer?
+    const PlatformRendererType rendererType = PLATFORM_RENDERER_OPENGL;
+    gameState->window = Platform_CreateWindow("flight", logicalPresentationWidth, logicalPresentationHeight, rendererType);
+    if (!gameState->window) {
+      return false;
+    }
+
+    Platform_SetWindowFullscreen(gameState->window, true);
+    Platform_SetWindowBordered(gameState->window, false);
+    //Platform_SetWindowResizeable(gameState->window, false);
+    //Platform_SetWindowSurfaceVSync(gameState->window, 1);
+
+    gameState->renderer = Platform_CreateRenderer(gameState->window);
+    if (!gameState->renderer) {
+      Platform_DestroyWindow(gameState->window);
+      gameState->window = NULL;
+      return false;
+    }
+
+    Platform_SetRenderLogicalPresentation(gameState->renderer, logicalPresentationWidth, logicalPresentationHeight);
+    //Platform_RendererSetVSync(gameState->renderer, 1);
+
+    gameState->enableFPS = true;
+    gameState->fps = 0.0f;
+    gameState->accumulatedSeconds = 0.0f;
+    gameState->fpsUpdateFrequency = 2.0f;
+    gameState->numUpdates = 0;
+
+    return true;
   }
-  return true;
+
+  return false;
 }
 
-void Game_Update(void *state, const float delta_time) {
-  GameState* gameState = (GameState*)(state);
+void Game_Update(void *state, const float deltaTime) {
+  GameState *gameState = (GameState *)(state);
   if (gameState && gameState->isRunning) {
-    accumulatedSeconds += delta_time;
-    ++numUpdates;
-    if (accumulatedSeconds > fpsUpdateFrequency) {
-      fps = (float)numUpdates/accumulatedSeconds;
-      Platform_Log("Game fps: (%.2f), dt: (%.5f), NumUpdates: (%d), accumulatedSeconds: (%.5f)", fps, delta_time, numUpdates, accumulatedSeconds);
-      numUpdates = 0;
-      accumulatedSeconds = 0.0f;
+    gameState->accumulatedSeconds += deltaTime;
+    ++gameState->numUpdates;
+    if (gameState->accumulatedSeconds > gameState->fpsUpdateFrequency) {
+      gameState->fps = (float)gameState->numUpdates / gameState->accumulatedSeconds;
+      Platform_Log("Game fps: (%.2f), dt: (%.6f), NumUpdates: (%d), accumulatedSeconds: (%.5f)", gameState->fps, deltaTime, gameState->numUpdates, gameState->accumulatedSeconds);
+      gameState->numUpdates = 0;
+      gameState->accumulatedSeconds = 0.0f;
     }
   }
 }
 
+void Game_Render(void *state) {
+  GameState *gameState = (GameState *)state;
+  Platform_RendererClear(gameState->renderer);
+  Platform_RendererPresent(gameState->renderer);
+}
+
 void Game_Shutdown(void **state) {
-  GameState* gameState = (GameState*)(*state);
+  GameState *gameState = (GameState *)(*state);
+
   if (gameState) {
+    if (gameState->renderer) {
+      Platform_DestroyRenderer(gameState->renderer);
+      gameState->renderer = NULL;
+    }
+
+    if (gameState->window) {
+      Platform_DestroyWindow(gameState->window);
+      gameState->window = NULL;
+    }
+
     Platform_Log("Game Shutting Down.");
     gameState->isRunning = false;
     // TODO: (ARC): Use Arenas from shared/platform for this free.
     free(gameState);
     *state = NULL;
   }
+}
+
+PLUGIN_EXPORT PluginAPI *get_plugin_api(void) {
+  return &g_game_plugin;
 }

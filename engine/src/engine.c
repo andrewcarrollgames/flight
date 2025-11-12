@@ -1,8 +1,10 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #include "engine.h"
 #include "platform.h"
 #include "platform_renderer.h"
 #include "platform_window.h"
-#include "plugin_api.h"
 #include <stdlib.h>
 
 #ifndef ENABLE_HOT_RELOAD
@@ -14,25 +16,8 @@
 static void *gameState = NULL;
 #endif
 
-static PlatformWindow *mainWindow = NULL;
-static PlatformRenderer *mainRenderer = NULL;
-
-uint64_t prevFrameTimeNS;
-const float nanoSecondsToSeconds = (1.0f / 1000000000.0f);
-
 bool Engine_Initialize(void) {
   Platform_Log("Engine Initializing.");
-  mainWindow = Platform_CreateWindow("flight", 800, 600);
-  if (!mainWindow) {
-    return false;
-  }
-
-  mainRenderer = Platform_CreateRenderer(mainWindow);
-  if (!mainRenderer) {
-    Platform_DestroyWindow(mainWindow);
-    mainWindow = NULL;
-    return false;
-  }
 
 #ifndef ENABLE_HOT_RELOAD
   if (!Game_Initialize(&gameState)) {
@@ -40,8 +25,6 @@ bool Engine_Initialize(void) {
   }
 
   if (!gameState) {
-    Platform_DestroyRenderer(mainRenderer);
-    Platform_DestroyWindow(mainWindow);
     return false;
   }
 #endif
@@ -49,33 +32,20 @@ bool Engine_Initialize(void) {
   return true;
 }
 
-void Engine_Update(void) {
-  const uint64_t currentTimeNS = Platform_GetTicksNS();
-  const float deltaTime = (float)(currentTimeNS - prevFrameTimeNS) * nanoSecondsToSeconds;
-  prevFrameTimeNS = currentTimeNS;
+void Engine_Update(float deltaTime) {
 #ifndef ENABLE_HOT_RELOAD
   Game_Update(gameState, deltaTime);
 #endif
 }
 
 void Engine_Render(void) {
-  Platform_RendererClear(mainRenderer);
-  Platform_RendererPresent(mainRenderer);
+#ifndef ENABLE_HOT_RELOAD
+  Game_Render(gameState);
+#endif
 }
 
 void Engine_Shutdown(void) {
   Platform_Log("Engine Shutting Down.");
-
-  if (mainRenderer) {
-    Platform_DestroyRenderer(mainRenderer);
-    mainRenderer = NULL;
-  }
-
-  if (mainWindow) {
-    Platform_DestroyWindow(mainWindow);
-    mainWindow = NULL;
-  }
-
 #ifndef ENABLE_HOT_RELOAD
   if (gameState) {
     Game_Shutdown(&gameState);

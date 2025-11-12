@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #include "platform.h"
 #include <SDL3/SDL.h>
 #include <stdarg.h>

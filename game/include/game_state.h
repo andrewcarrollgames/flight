@@ -4,8 +4,23 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// forward declarations
+typedef struct PlatformWindow PlatformWindow;
+typedef struct PlatformRenderer PlatformRenderer;
+
 typedef struct GameState {
-  uint64_t version;
+  PlatformWindow *window;
+  PlatformRenderer *renderer;
+  PluginAPI *plugin_api;
+
+  // FPS variables.
+  uint32_t numUpdates;
+  float accumulatedSeconds;
+  float fps;
+  float fpsUpdateFrequency;
+  bool enableFPS;
+
+  // True if this should be updating right now.
   bool isRunning;
 } GameState;
 

@@ -11,7 +11,9 @@ set(PLATFORM_HEADERS "")
 # =======================
 # PART 1: Platform Library (the API implementation)
 # =======================
-set(PLATFORM_LIB_SOURCES "")
+set(PLATFORM_LIB_SOURCES
+	src/vector2.c
+)
 
 if(PLATFORM_BACKEND STREQUAL "SDL")
 	list(APPEND PLATFORM_LIB_SOURCES
@@ -76,9 +78,10 @@ if(${ENABLE_HOT_RELOAD})
 	endif()
 endif()
 
-if(PLATFORM_BACKEND STREQUAL "SDL")
-	target_compile_definitions(platform PRIVATE SDL_MAIN_USE_CALLBACKS)
-endif()
+# Turn this on to enable the program to use SDL callbacks for the main functions.
+#if(PLATFORM_BACKEND STREQUAL "SDL")
+#	target_compile_definitions(platform PRIVATE SDL_MAIN_USE_CALLBACKS)
+#endif()
 
 # Executable name from game
 set_target_properties(platform PROPERTIES OUTPUT_NAME ${EXECUTABLE_NAME})

@@ -2,14 +2,19 @@
 #define GAME_H
 
 #include <stdbool.h>
+#include "plugin_api.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+// forward declarations
+typedef struct PluginAPI PluginAPI;
 // PluginAPI Implementation (plugin_api.h)
+
 bool Game_Initialize(void **state);
-void Game_Update(void *state, float delta_time);
+void Game_Update(void *state, float deltaTime);
+void Game_Render(void *state);
 void Game_Shutdown(void **state);
 // End PluginAPI
 
