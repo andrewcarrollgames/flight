@@ -2,6 +2,7 @@ project(game LANGUAGES C)
 
 set(GAME_FILES
 	src/game.c include/game.h
+	include/game_context.h
 	include/game_state.h
 )
 

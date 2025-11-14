@@ -2,6 +2,7 @@
 // All rights reserved.
 
 #include "game.h"
+#include "game_context.h"
 #include "game_state.h"
 #include "plugin_api.h"
 #include <stdlib.h>
