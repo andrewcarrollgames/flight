@@ -1,30 +1,43 @@
-// Copyright (c) 2025 Andrew Carroll Games, LLC
-// All rights reserved.
-
 #include "engine.h"
 #include "platform.h"
-#include "platform_renderer.h"
-#include "platform_window.h"
 #include <stdlib.h>
 
-#ifndef ENABLE_HOT_RELOAD
-#include "game.h"
-
-// In case of hot reloading, this persists across reload boundaries.
-// In "normal" builds (where game is statically linked), it serves as a place to hold the active data for the simulation.
-// Note: this is allocated/freed in "game" code, not anywhere else.
-static void *gameState = NULL;
+#ifdef ENABLE_HOT_RELOAD
+    // Hot reload build - use plugin system
+    #include "plugin_manager.h"
+#else
+    // Static build - direct link to game
+    #include "game.h"
+    static void* gameState = NULL;
 #endif
 
 bool Engine_Initialize(void) {
   Platform_Log("Engine Initializing.");
 
-#ifndef ENABLE_HOT_RELOAD
-  if (!Game_Initialize(&gameState)) {
+#ifdef ENABLE_HOT_RELOAD
+  // Hot reload path - use plugin manager
+  if (!PluginManager_Init()) {
+    Platform_LogError("Failed to initialize plugin manager");
     return false;
   }
 
-  if (!gameState) {
+  // Load game plugin dynamically
+#ifdef _WIN32
+  const char* game_plugin = "game.dll";
+#elif defined(__APPLE__)
+  const char* game_plugin = "libgame.dylib";
+#else
+  const char* game_plugin = "libgame.so";
+#endif
+
+  int game_index = PluginManager_Load(game_plugin);
+  if (game_index < 0) {
+    Platform_LogError("Failed to load game plugin");
+    return false;
+  }
+#else
+  if (!Game_Initialize(&gameState)) {
+    Platform_LogError("Failed to initialize game");
     return false;
   }
 #endif
@@ -33,20 +46,36 @@ bool Engine_Initialize(void) {
 }
 
 void Engine_Update(float deltaTime) {
-#ifndef ENABLE_HOT_RELOAD
+#ifdef ENABLE_HOT_RELOAD
+  // Check for hot reloads
+  PluginManager_CheckReloadAll();
+
+  // Update all plugins
+  PluginManager_UpdateAll(deltaTime);
+#else
+  // Direct call to statically linked game
   Game_Update(gameState, deltaTime);
 #endif
 }
 
 void Engine_Render(void) {
-#ifndef ENABLE_HOT_RELOAD
+#ifdef ENABLE_HOT_RELOAD
+  // Render all plugins
+  PluginManager_RenderAll();
+#else
+  // Direct call to statically linked game
   Game_Render(gameState);
 #endif
 }
 
 void Engine_Shutdown(void) {
   Platform_Log("Engine Shutting Down.");
-#ifndef ENABLE_HOT_RELOAD
+
+#ifdef ENABLE_HOT_RELOAD
+  // Shutdown plugin system
+  PluginManager_Shutdown();
+#else
+  // Shutdown statically linked game
   if (gameState) {
     Game_Shutdown(&gameState);
   }

@@ -15,6 +15,16 @@ set(PLATFORM_LIB_SOURCES
 	src/vector2.c
 )
 
+if(UNIX)
+	list(APPEND PLATFORM_LIB_SOURCES
+		src/platform_plugin_unix.c
+	)
+elseif(WIN32)
+	list(APPEND PLATFORM_LIB_SOURCES
+		src/platform_plugin_win32.c
+	)
+endif()
+
 if(PLATFORM_BACKEND STREQUAL "SDL")
 	list(APPEND PLATFORM_LIB_SOURCES
 		src/sdl/platform_renderer_sdl.c
@@ -65,18 +75,6 @@ endif()
 
 # Create the executable
 add_executable(platform WIN32 ${PLATFORM_EXE_SOURCES})
-
-# Export symbols for the plugins, which will include platform-lib
-if(${ENABLE_HOT_RELOAD})
-	if(UNIX)
-		target_link_options(platform PRIVATE "-rdynamic")
-	elseif(WIN32)
-		set_target_properties(platform PROPERTIES
-				ENABLE_EXPORTS ON
-				WINDOWS_EXPORT_ALL_SYMBOLS ON
-		)
-	endif()
-endif()
 
 # Turn this on to enable the program to use SDL callbacks for the main functions.
 #if(PLATFORM_BACKEND STREQUAL "SDL")

@@ -2,6 +2,8 @@ project(engine LANGUAGES C)
 
 add_library(engine STATIC
     src/engine.c
+	src/plugin_manager.c
+	include/plugin_manager.h
 )
 
 set(ENGINE_LIBS

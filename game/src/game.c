@@ -10,59 +10,56 @@
 #include <stdlib.h>
 
 static PluginAPI g_game_plugin = {
-  .version = 1,
-  .name = "Flight Game",
-  .init = Game_Initialize,
-  .update = Game_Update,
-  .render = Game_Render,
-  .shutdown = Game_Shutdown
-};
+    .version = 1,
+    .name = "Flight Game",
+    .init = Game_Initialize,
+    .update = Game_Update,
+    .render = Game_Render,
+    .shutdown = Game_Shutdown};
 
 bool Game_Initialize(void **state) {
   // TODO: (ARC): Use Arenas from shared/platform for this allocation.
   GameState *gameState = (GameState *)malloc(sizeof(GameState));
   *state = gameState;
-
-  if (gameState) {
-    Platform_Log("Game Initializing.");
-    gameState->isRunning = true;
-
-    const int32_t logicalPresentationWidth = 640;
-    const int32_t logicalPresentationHeight = 360;
-
-    // TODO: (ARC) Make a runtime function in platform to GetOSType then select default renderer?
-    // Maybe add something to the CMakePresets config to set default renderer?
-    const PlatformRendererType rendererType = PLATFORM_RENDERER_OPENGL;
-    gameState->window = Platform_CreateWindow("flight", logicalPresentationWidth, logicalPresentationHeight, rendererType);
-    if (!gameState->window) {
-      return false;
-    }
-
-    Platform_SetWindowFullscreen(gameState->window, true);
-    Platform_SetWindowBordered(gameState->window, false);
-    //Platform_SetWindowResizeable(gameState->window, false);
-    //Platform_SetWindowSurfaceVSync(gameState->window, 1);
-
-    gameState->renderer = Platform_CreateRenderer(gameState->window);
-    if (!gameState->renderer) {
-      Platform_DestroyWindow(gameState->window);
-      gameState->window = NULL;
-      return false;
-    }
-
-    Platform_SetRenderLogicalPresentation(gameState->renderer, logicalPresentationWidth, logicalPresentationHeight);
-    //Platform_RendererSetVSync(gameState->renderer, 1);
-
-    gameState->enableFPS = true;
-    gameState->fps = 0.0f;
-    gameState->accumulatedSeconds = 0.0f;
-    gameState->fpsUpdateFrequency = 2.0f;
-    gameState->numUpdates = 0;
-
-    return true;
+  if (!gameState) {
+    Platform_LogError("Game_Initialize: Failed to allocate GameState");
+    return false;
   }
 
-  return false;
+  gameState->isRunning = true;
+  const int32_t logicalPresentationWidth = 640;
+  const int32_t logicalPresentationHeight = 360;
+
+  // TODO: (ARC) A default value could be defined in our config?
+  gameState->window = Platform_CreateWindow("flight", logicalPresentationWidth, logicalPresentationHeight, PLATFORM_RENDERER_OPENGL);
+  if (!gameState->window) {
+    Platform_LogError("Game_Initialize: Window creation failed!");
+    free(gameState);
+    return false;
+  }
+
+  Platform_SetWindowFullscreen(gameState->window, true);
+  Platform_SetWindowBordered(gameState->window, false);
+  // Platform_SetWindowResizeable(gameState->window, false);
+  // Platform_SetWindowSurfaceVSync(gameState->window, 1);
+
+  gameState->renderer = Platform_CreateRenderer(gameState->window);
+  if (!gameState->renderer) {
+    Platform_DestroyWindow(gameState->window);
+    gameState->window = NULL;
+    return false;
+  }
+
+  Platform_SetRenderLogicalPresentation(gameState->renderer, logicalPresentationWidth, logicalPresentationHeight);
+  // Platform_RendererSetVSync(gameState->renderer, 1);
+
+  gameState->enableFPS = true;
+  gameState->fps = 0.0f;
+  gameState->accumulatedSeconds = 0.0f;
+  gameState->fpsUpdateFrequency = 2.0f;
+  gameState->numUpdates = 0;
+
+  return true;
 }
 
 void Game_Update(void *state, const float deltaTime) {
@@ -80,7 +77,7 @@ void Game_Update(void *state, const float deltaTime) {
 }
 
 void Game_Render(void *state) {
-  GameState *gameState = (GameState *)state;
+  const GameState *gameState = (GameState *)state;
   Platform_RendererClear(gameState->renderer);
   Platform_RendererPresent(gameState->renderer);
 }
@@ -101,12 +98,13 @@ void Game_Shutdown(void **state) {
 
     Platform_Log("Game Shutting Down.");
     gameState->isRunning = false;
+
     // TODO: (ARC): Use Arenas from shared/platform for this free.
     free(gameState);
     *state = NULL;
   }
 }
 
-PLUGIN_EXPORT PluginAPI *get_plugin_api(void) {
+PLUGIN_EXPORT PluginAPI *GetPluginAPI(void) {
   return &g_game_plugin;
 }
