@@ -40,6 +40,7 @@ bool Game_Initialize(void **state, PlatformAPI *platformAPI, EngineAPI *engineAP
   if (!gameState->renderer) {
     PLATFORM_DESTROY_WINDOW(gameState->window);
     gameState->window = NULL;
+    free(gameState);
     return false;
   }
 
