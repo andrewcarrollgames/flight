@@ -28,9 +28,9 @@ extern "C" {
 void Platform_Log(const char *fmt, ...);
 void Platform_LogError(const char *fmt, ...);
 void Platform_LogWarning(const char *fmt, ...);
-const char *Platform_GetBasePath();
+const char *Platform_GetBasePath(void);
 const char *Platform_GetPrefPath(const char *org, const char *app);
-uint64_t Platform_GetTicksNS();
+uint64_t Platform_GetTicksNS(void);
 
 #ifdef __cplusplus
 }

@@ -4,21 +4,14 @@
 #ifndef FLIGHT_PLATFORM_WINDOW_H
 #define FLIGHT_PLATFORM_WINDOW_H
 
+#include "platform_api_types.h"
+#include "platform_api_enums.h"
 #include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// forward declarations
-typedef struct PlatformWindow PlatformWindow;
-
-  typedef enum PlatformRendererType {
-    PLATFORM_RENDERER_VULKAN,
-    PLATFORM_RENDERER_METAL,
-    PLATFORM_RENDERER_OPENGL
-  } PlatformRendererType;
 
 PlatformWindow *Platform_CreateWindow(const char *title, int32_t width, int32_t height, PlatformRendererType rendererType);
 void Platform_DestroyWindow(PlatformWindow *window);

@@ -6,8 +6,10 @@
 #include <SDL3/SDL_main.h>
 #include <platform.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #ifdef SDL_MAIN_USE_CALLBACKS
+
 const float nanoSecondsToSeconds = (1.0f / 1000000000.0f);
 uint64_t prevFrameTimeNS = 0;
 uint64_t currentTimeNS = 0;

@@ -1,5 +1,7 @@
 #include "plugin_manager.h"
 #include "plugin_api.h"
+#include "platform_api.h"
+#include "engine_api.h"
 #include "platform.h"
 #include "platform_plugin.h"
 #include <string.h>
@@ -87,7 +89,7 @@ int PluginManager_Load(const char* path) {
 
     // Initialize the plugin
     if (plugin->api->init) {
-        if (!plugin->api->init(&plugin->state)) {
+        if (!plugin->api->init(&plugin->state, Platform_GetAPI(), Engine_GetAPI())) {
             Platform_LogError("Plugin init failed: %s", path);
             Platform_PluginUnload(plugin->handle);
             return -1;

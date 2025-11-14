@@ -4,16 +4,13 @@
 #ifndef FLIGHT_PLATFORM_RENDERER_H
 #define FLIGHT_PLATFORM_RENDERER_H
 
+#include "platform_api_types.h"
 #include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// forward declarations
-typedef struct PlatformWindow PlatformWindow;
-typedef struct PlatformRenderer PlatformRenderer;
 
 PlatformRenderer *Platform_CreateRenderer(PlatformWindow *window);
 void Platform_DestroyRenderer(PlatformRenderer *renderer);

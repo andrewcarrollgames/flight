@@ -9,9 +9,10 @@ typedef struct PlatformWindow PlatformWindow;
 typedef struct PlatformRenderer PlatformRenderer;
 
 typedef struct GameState {
+  //EngineAPI *engine;
+  //PlatformAPI *platform;
   PlatformWindow *window;
   PlatformRenderer *renderer;
-  PluginAPI *plugin_api;
 
   // FPS variables.
   uint32_t numUpdates;

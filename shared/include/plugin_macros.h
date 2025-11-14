@@ -1,0 +1,89 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
+#ifndef PLUGIN_MACROS_H
+#define PLUGIN_MACROS_H
+
+#include "platform_api.h"
+#include "engine_api.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Macro to define API accessor functions for a plugin
+// Usage: DEFINE_PLUGIN_API_ACCESSORS(g_my_plugin_state)
+#define DEFINE_PLUGIN_API_ACCESSORS(state_ptr) \
+    static inline PlatformAPI* __platform_api(void) { return (state_ptr).platform; } \
+    static inline EngineAPI* __engine_api(void) { return (state_ptr).engine; }
+
+// Universal Platform Macros
+#ifdef ENABLE_HOT_RELOAD
+    // Hot reload: indirect through function pointers
+    #define PLATFORM_LOG(...) __platform_api()->Log(__VA_ARGS__)
+    #define PLATFORM_LOG_ERROR(...) __platform_api()->LogError(__VA_ARGS__)
+    #define PLATFORM_LOG_WARNING(...) __platform_api()->LogWarning(__VA_ARGS__)
+    #define PLATFORM_ALLOC(size) __platform_api()->Alloc(size)
+    #define PLATFORM_FREE(ptr) __platform_api()->Free(ptr)
+    #define PLATFORM_GET_TICKS_NS() __platform_api()->GetTicksNS()
+
+    #define PLATFORM_CREATE_WINDOW(...) __platform_api()->CreateWindow(__VA_ARGS__)
+    #define PLATFORM_DESTROY_WINDOW(w) __platform_api()->DestroyWindow(w)
+    #define PLATFORM_GET_WINDOW_SIZE(w, x, y) __platform_api()->GetWindowSize(w, x, y)
+    #define PLATFORM_SET_WINDOW_FULLSCREEN(w, f) __platform_api()->SetWindowFullscreen(w, f)
+    #define PLATFORM_SET_WINDOW_BORDERED(w, b) __platform_api()->SetWindowBordered(w, b)
+    #define PLATFORM_SET_WINDOW_RESIZEABLE(w, r) __platform_api()->SetWindowResizeable(w, r)
+    #define PLATFORM_SET_WINDOW_SURFACE_VSYNC(w, v) __platform_api()->SetWindowSurfaceVSync(w, v)
+    #define PLATFORM_GET_WINDOW_SURFACE_VSYNC(w, v) __platform_api()->GetWindowSurfaceVSync(w, v)
+
+    #define PLATFORM_CREATE_RENDERER(w) __platform_api()->CreateRenderer(w)
+    #define PLATFORM_DESTROY_RENDERER(r) __platform_api()->DestroyRenderer(r)
+    #define PLATFORM_RENDERER_CLEAR(r) __platform_api()->RendererClear(r)
+    #define PLATFORM_RENDERER_PRESENT(r) __platform_api()->RendererPresent(r)
+    #define PLATFORM_RENDERER_SET_VSYNC(r, v) __platform_api()->RendererSetVSync(r, v)
+    #define PLATFORM_RENDERER_GET_VSYNC(r, v) __platform_api()->RendererGetVSync(r, v)
+    #define PLATFORM_SET_RENDER_LOGICAL_PRESENTATION(r, w, h) __platform_api()->SetRenderLogicalPresentation(r, w, h)
+
+    // Engine macros (add as you implement features)
+    // #define ENGINE_CREATE_ENTITY() __engine_api()->CreateEntity()
+    // #define ENGINE_DESTROY_ENTITY(e) __engine_api()->DestroyEntity(e)
+#else
+    // Static build: direct function calls (zero overhead!)
+    #include "platform.h"
+    #include "platform_window.h"
+    #include "platform_renderer.h"
+    // #include "engine.h"  // When you have engine functions
+
+    #define PLATFORM_LOG Platform_Log
+    #define PLATFORM_LOG_ERROR Platform_LogError
+    #define PLATFORM_LOG_WARNING Platform_LogWarning
+    #define PLATFORM_ALLOC Platform_Alloc
+    #define PLATFORM_FREE Platform_Free
+    #define PLATFORM_GET_TICKS_NS Platform_GetTicksNS
+
+    #define PLATFORM_CREATE_WINDOW Platform_CreateWindow
+    #define PLATFORM_DESTROY_WINDOW Platform_DestroyWindow
+    #define PLATFORM_GET_WINDOW_SIZE Platform_GetWindowSize
+    #define PLATFORM_SET_WINDOW_FULLSCREEN Platform_SetWindowFullscreen
+    #define PLATFORM_SET_WINDOW_BORDERED Platform_SetWindowBordered
+    #define PLATFORM_SET_WINDOW_RESIZEABLE Platform_SetWindowResizeable
+    #define PLATFORM_SET_WINDOW_SURFACE_VSYNC Platform_SetWindowSurfaceVSync
+    #define PLATFORM_GET_WINDOW_SURFACE_VSYNC Platform_GetWindowSurfaceVSync
+
+    #define PLATFORM_CREATE_RENDERER Platform_CreateRenderer
+    #define PLATFORM_DESTROY_RENDERER Platform_DestroyRenderer
+    #define PLATFORM_RENDERER_CLEAR Platform_RendererClear
+    #define PLATFORM_RENDERER_PRESENT Platform_RendererPresent
+    #define PLATFORM_RENDERER_SET_VSYNC Platform_RendererSetVSync
+    #define PLATFORM_RENDERER_GET_VSYNC Platform_RendererGetVSync
+    #define PLATFORM_SET_RENDER_LOGICAL_PRESENTATION Platform_SetRenderLogicalPresentation
+
+    // Engine macros for static builds
+    // #define ENGINE_CREATE_ENTITY Engine_CreateEntity
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

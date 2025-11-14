@@ -1,6 +1,16 @@
 #include "engine.h"
+#include "engine_api.h"
 #include "platform.h"
 #include <stdlib.h>
+
+// Engine API (mostly empty for now)
+static EngineAPI g_engine_api = {
+  ._placeholder = 0  // Remove when you add real functions
+};
+
+EngineAPI* Engine_GetAPI(void) {
+  return &g_engine_api;
+}
 
 #ifdef ENABLE_HOT_RELOAD
     // Hot reload build - use plugin system
@@ -36,7 +46,7 @@ bool Engine_Initialize(void) {
     return false;
   }
 #else
-  if (!Game_Initialize(&gameState)) {
+  if (!Game_Initialize(&gameState, NULL, NULL)) {
     Platform_LogError("Failed to initialize game");
     return false;
   }
