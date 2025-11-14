@@ -228,6 +228,11 @@
             "configurePreset": "windows-debug",
             "configuration": "Debug"
         }, {
+            "name": "build-windows-debug-hotreload",
+            "displayName": "Windows Debug Build - Hot Reload",
+            "configurePreset": "windows-debug-hotreload",
+            "configuration": "Debug"
+        },{
             "name": "build-windows-release",
             "displayName": "Windows Release Build",
             "configurePreset": "windows-release",
