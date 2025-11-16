@@ -56,17 +56,18 @@ bool Engine_Initialize(void) {
     free(fullPath);
     return false;
   }
+
+  // TODO: (ARC) Arena Free/Release
+  free(fullPath);
+
 #else
   if (!Game_Initialize(&gameState, NULL, NULL)) {
     Platform_LogError("Failed to initialize game");
     // TODO: (ARC) Arena Free/Release
-    free(fullPath);
     return false;
   }
 #endif
 
-    // TODO: (ARC) Arena Free/Release
-  free(fullPath);
   return true;
 }
 

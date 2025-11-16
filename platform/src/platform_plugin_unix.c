@@ -104,45 +104,63 @@ bool Platform_PluginNeedsReload(PlatformPlugin* plugin) {
 }
 
 bool Platform_PluginReload(PlatformPlugin* plugin) {
-    if (!plugin) return false;
+  if (!plugin) return false;
 
-    Platform_Log("Reloading plugin: %s", plugin->path);
+  Platform_Log("Reloading plugin: %s", plugin->path);
 
-    // Unload old handle
+  // Save the old temp path
+  char old_temp_path[256];
+  strncpy(old_temp_path, plugin->temp_path, sizeof(old_temp_path) - 1);
+  old_temp_path[sizeof(old_temp_path) - 1] = '\0';
+
+  // Unload old handle
+  if (plugin->handle) {
+    dlclose(plugin->handle);
+    plugin->handle = NULL;
+  }
+
+  // Sleep to let OS release file handles
+  usleep(50000);  // 50ms in microseconds
+
+  // Create new temp path
+  snprintf(plugin->temp_path, sizeof(plugin->temp_path),
+           "%s.%ld.tmp", plugin->path, (long)time(NULL));
+
+  // Copy new version to temp
+  char cmd[1024];
+  snprintf(cmd, sizeof(cmd), "cp '%s' '%s'", plugin->path, plugin->temp_path);
+  if (system(cmd) != 0) {
+    Platform_LogError("Failed to copy plugin during reload: %s", plugin->path);
+
+    // Try to reload the old temp file as fallback
+    Platform_Log("Attempting to reload old version...");
+    plugin->handle = dlopen(old_temp_path, RTLD_NOW | RTLD_LOCAL);
     if (plugin->handle) {
-        dlclose(plugin->handle);
-        plugin->handle = NULL;
+      strncpy(plugin->temp_path, old_temp_path, sizeof(plugin->temp_path) - 1);
+      Platform_LogWarning("Reloaded old version successfully");
+      return false;
     }
 
-    // Delete old temp file
-    unlink(plugin->temp_path);
+    return false;
+  }
 
-    // Create new temp path
-    snprintf(plugin->temp_path, sizeof(plugin->temp_path),
-             "%s.%ld.tmp", plugin->path, (long)time(NULL));
+  // Delete old temp file now that we have a new one
+  unlink(old_temp_path);
 
-    // Copy new version to temp
-    char cmd[512];
-    snprintf(cmd, sizeof(cmd), "cp '%s' '%s'", plugin->path, plugin->temp_path);
-    if (system(cmd) != 0) {
-        Platform_LogError("Failed to copy plugin during reload: %s", plugin->path);
-        return false;
-    }
+  // Load new version
+  plugin->handle = dlopen(plugin->temp_path, RTLD_NOW | RTLD_LOCAL);
+  if (!plugin->handle) {
+    Platform_LogError("Failed to load plugin during reload: %s - %s",
+                     plugin->temp_path, dlerror());
+    return false;
+  }
 
-    // Load new version
-    plugin->handle = dlopen(plugin->temp_path, RTLD_NOW | RTLD_LOCAL);
-    if (!plugin->handle) {
-        Platform_LogError("Failed to load plugin during reload: %s - %s",
-                         plugin->temp_path, dlerror());
-        return false;
-    }
+  // Update file time
+  struct stat st;
+  if (stat(plugin->path, &st) == 0) {
+    plugin->last_mtime = st.st_mtime;
+  }
 
-    // Update file time
-    struct stat st;
-    if (stat(plugin->path, &st) == 0) {
-        plugin->last_mtime = st.st_mtime;
-    }
-
-    Platform_Log("Plugin reloaded successfully: %s", plugin->path);
-    return true;
+  Platform_Log("Plugin reloaded successfully: %s", plugin->temp_path);
+  return true;
 }

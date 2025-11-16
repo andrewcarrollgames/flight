@@ -32,8 +32,8 @@ bool Game_Initialize(void **state, PlatformAPI *platformAPI, EngineAPI *engineAP
     return false;
   }
 
-  PLATFORM_SET_WINDOW_FULLSCREEN(gameState->window, true);
-  PLATFORM_SET_WINDOW_BORDERED(gameState->window, false);
+  PLATFORM_SET_WINDOW_FULLSCREEN(gameState->window, false);
+  PLATFORM_SET_WINDOW_BORDERED(gameState->window, true);
   // Platform_SetWindowResizeable(gameState->window, false);
   // Platform_SetWindowSurfaceVSync(gameState->window, 1);
 
@@ -51,7 +51,7 @@ bool Game_Initialize(void **state, PlatformAPI *platformAPI, EngineAPI *engineAP
   gameState->enableFPS = true;
   gameState->fps = 0.0f;
   gameState->accumulatedSeconds = 0.0f;
-  gameState->fpsUpdateFrequency = 0.5f;
+  gameState->fpsUpdateFrequency = 2.0f;
   gameState->numUpdates = 0;
 
   return true;
@@ -64,7 +64,7 @@ void Game_Update(void *state, const float deltaTime) {
     ++gameState->numUpdates;
     if (gameState->accumulatedSeconds > gameState->fpsUpdateFrequency) {
       gameState->fps = (float)gameState->numUpdates / gameState->accumulatedSeconds;
-      PLATFORM_LOG("Game fps: (%.2f), dt: (%.6f), NumUpdates: (%d), accumulatedSeconds: (%.5f)", gameState->fps, deltaTime, gameState->numUpdates, gameState->accumulatedSeconds);
+      PLATFORM_LOG("Game fps: (%.3f), dt: (%.6f), NumUpdates: (%d), accumulatedSeconds: (%.5f)", gameState->fps, deltaTime, gameState->numUpdates, gameState->accumulatedSeconds);
       gameState->numUpdates = 0;
       gameState->accumulatedSeconds = 0.0f;
     }

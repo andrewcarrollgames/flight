@@ -184,6 +184,8 @@ void PluginManager_CheckReloadAll(void) {
 
             plugin->api = get_api();
             plugin->state = saved_state;  // Restore state pointer
+            plugin->api->platform = Platform_GetAPI();
+            plugin->api->engine = Engine_GetAPI();
 
             Platform_Log("Plugin reloaded: %s (v%d)",
                          plugin->api->name,
