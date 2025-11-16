@@ -13,14 +13,7 @@ typedef struct GameState {
   PlatformRenderer *renderer;
 
   // FPS variables.
-  uint32_t numUpdates;
-  float accumulatedSeconds;
-  float fps;
-  float fpsUpdateFrequency;
   bool enableFPS;
-
-  // True if this should be updating right now.
-  bool isRunning;
 } GameState;
 
 #endif

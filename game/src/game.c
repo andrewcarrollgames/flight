@@ -20,7 +20,7 @@ bool Game_Initialize(void **state, PlatformAPI *platformAPI, EngineAPI *engineAP
     return false;
   }
 
-  gameState->isRunning = true;
+  gameState->enableFPS = true;
   const int32_t logicalPresentationWidth = 640;
   const int32_t logicalPresentationHeight = 360;
 
@@ -49,25 +49,13 @@ bool Game_Initialize(void **state, PlatformAPI *platformAPI, EngineAPI *engineAP
   // Platform_RendererSetVSync(gameState->renderer, 1);
 
   gameState->enableFPS = true;
-  gameState->fps = 0.0f;
-  gameState->accumulatedSeconds = 0.0f;
-  gameState->fpsUpdateFrequency = 2.0f;
-  gameState->numUpdates = 0;
-
   return true;
 }
 
 void Game_Update(void *state, const float deltaTime) {
   GameState *gameState = (GameState *)(state);
-  if (gameState && gameState->isRunning) {
-    gameState->accumulatedSeconds += deltaTime;
-    ++gameState->numUpdates;
-    if (gameState->accumulatedSeconds > gameState->fpsUpdateFrequency) {
-      gameState->fps = (float)gameState->numUpdates / gameState->accumulatedSeconds;
-      PLATFORM_LOG("Game fps: (%.3f), dt: (%.6f), NumUpdates: (%d), accumulatedSeconds: (%.5f)", gameState->fps, deltaTime, gameState->numUpdates, gameState->accumulatedSeconds);
-      gameState->numUpdates = 0;
-      gameState->accumulatedSeconds = 0.0f;
-    }
+  if(gameState->enableFPS){
+    PLATFORM_LOG("FPS: %.2f", 1.0f / deltaTime);
   }
 }
 
@@ -92,7 +80,6 @@ void Game_Shutdown(void **state) {
     }
 
     PLATFORM_LOG("Game Shutting Down.");
-    gameState->isRunning = false;
 
     // TODO: (ARC): Use Arenas from shared/platform for this free.
     free(gameState);
