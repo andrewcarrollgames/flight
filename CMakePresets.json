@@ -63,6 +63,7 @@
             }
         }, {
             "name": "debug",
+            "hidden": true,
             "displayName": "Debug",
             "binaryDir": "${sourceDir}/build/debug",
             "cacheVariables": {
@@ -75,6 +76,7 @@
             }
         }, {
             "name": "debug-hotreload",
+            "hidden": true,
             "displayName": "Debug with Hot Reload",
             "binaryDir": "${sourceDir}/build/debug-hotreload",
             "cacheVariables": {
@@ -87,6 +89,7 @@
             }
         }, {
             "name": "release",
+            "hidden": true,
             "displayName": "Release",
             "binaryDir": "${sourceDir}/build/release",
             "cacheVariables": {
@@ -99,6 +102,7 @@
             }
         }, {
             "name": "relwithdebinfo",
+            "hidden": true,
             "displayName": "Release with Debug Info",
             "binaryDir": "${sourceDir}/build/relwithdebinfo",
             "cacheVariables": {
@@ -111,6 +115,7 @@
             }
         }, {
             "name": "minsizerel",
+            "hidden": true,
             "displayName": "Minimum Size Release",
             "binaryDir": "${sourceDir}/build/minsizerel",
             "cacheVariables": {
