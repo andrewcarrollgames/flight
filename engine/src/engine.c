@@ -2,6 +2,7 @@
 #include "engine_api.h"
 #include "platform.h"
 #include <stdlib.h>
+#include <string.h>
 
 // Engine API (mostly empty for now)
 static EngineAPI g_engine_api = {
@@ -40,18 +41,32 @@ bool Engine_Initialize(void) {
   const char* game_plugin = "libgame.so";
 #endif
 
-  int game_index = PluginManager_Load(game_plugin);
+  const char* basePath = Platform_GetBasePath();
+  // TODO: (ARC) Arena Allocate
+  char* fullPath = malloc(sizeof(char) * 256);
+  fullPath[0] = '\0';
+  strcat(fullPath, basePath);
+  strcat(fullPath, game_plugin);
+  Platform_Log("Loading plugin @: %s", fullPath);
+
+  int game_index = PluginManager_Load(fullPath);
   if (game_index < 0) {
     Platform_LogError("Failed to load game plugin");
+    // TODO: (ARC) Arena Free/Release
+    free(fullPath);
     return false;
   }
 #else
   if (!Game_Initialize(&gameState, NULL, NULL)) {
     Platform_LogError("Failed to initialize game");
+    // TODO: (ARC) Arena Free/Release
+    free(fullPath);
     return false;
   }
 #endif
 
+    // TODO: (ARC) Arena Free/Release
+  free(fullPath);
   return true;
 }
 
