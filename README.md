@@ -4,7 +4,7 @@ A multi-platform game engine focused on runtime performance and developer iterat
 
 ## Philosophy
 
-Flight is built around three core principles:
+Flight is built around these core principles:
 
 1. **Fast Iteration**: Hot-reload support for game code lets you see changes instantly without restarting
 2. **Runtime Performance**: Zero-cost abstractions in release builds - the plugin system compiles away to direct function calls
