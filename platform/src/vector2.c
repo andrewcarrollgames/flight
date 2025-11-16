@@ -27,7 +27,7 @@ Vector2 Vector2_Divide(const Vector2 vec, const float scalar) {
 }
 
 float Vector2_Dot(const Vector2 a, const Vector2 b) {
-  return (a.x * b.x) + (a.y + b.y);
+  return (a.x * b.x) + (a.y * b.y);
 }
 
 float Vector2_Cross(const Vector2 a, const Vector2 b) {
