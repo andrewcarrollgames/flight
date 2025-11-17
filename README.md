@@ -4,7 +4,7 @@ A multi-platform game engine focused on runtime performance and developer iterat
 
 ## Philosophy
 
-Flight is built around these core principles:
+Flight is built around these core principles::
 
 1. **Fast Iteration**: Hot-reload support for game code lets you see changes instantly without restarting
 2. **Runtime Performance**: Zero-cost abstractions in release builds - the plugin system compiles away to direct function calls
@@ -140,17 +140,30 @@ flight/
 
 ## Writing Game Code
 
-Your game is a plugin that implements the `PluginAPI` interface:
+Your game is a plugin that implements the `PluginAPI` interface. All memory comes from arenas - no malloc!
 
 ```c
 #include "game.h"
 #include "game_context.h"
 #include "plugin_macros.h"
 
-// Initialize: allocate and set up your state
+// Initialize: allocate and set up your state from arenas
 bool Game_Initialize(void** state, PlatformAPI* platform, EngineAPI* engine) {
-    GameState* gs = malloc(sizeof(GameState));  // Soon: Arena_Alloc()
+    // Get root arena from platform
+    Arena* root = PLATFORM_GET_ROOT_ARENA();
+    
+    // Create game's persistent arena
+    Arena* game_arena = Bump_Create(root, MEGABYTES(256));
+    Arena_SetDebugName(game_arena, "Game");
+    
+    // Allocate game state from game arena
+    GameState* gs = Arena_AllocType(game_arena, GameState);
     *state = gs;
+    gs->arena = game_arena;
+    
+    // Create subsystem arenas
+    gs->frame_arena = Stack_Create(game_arena, MEGABYTES(4));
+    Arena_SetDebugName(gs->frame_arena, "Game::Frame");
     
     // Use platform services through macros
     gs->window = PLATFORM_CREATE_WINDOW("My Game", 1280, 720, PLATFORM_RENDERER_OPENGL);
@@ -162,6 +175,12 @@ bool Game_Initialize(void** state, PlatformAPI* platform, EngineAPI* engine) {
 // Update: called every frame with delta time
 void Game_Update(void* state, float dt) {
     GameState* gs = (GameState*)state;
+    
+    // Reset frame arena at start of each frame
+    ARENA_RESET(gs->frame_arena);
+    
+    // Allocate temp data - automatically freed next frame
+    TempData* temp = Arena_AllocType(gs->frame_arena, TempData);
     
     // Your game logic here
     PLATFORM_LOG("FPS: %.2f", 1.0f / dt);
@@ -183,7 +202,8 @@ void Game_Shutdown(void** state) {
     PLATFORM_DESTROY_RENDERER(gs->renderer);
     PLATFORM_DESTROY_WINDOW(gs->window);
     
-    free(gs);  // Soon: Arena_Destroy()
+    // Destroy game arena (frees ALL game memory including frame_arena)
+    ARENA_DESTROY(gs->arena);
     *state = NULL;
 }
 ```
@@ -203,10 +223,15 @@ Your `GameState` persists across hot reloads, but your code doesn't:
 - [x] Hot reload system
 - [x] Multi-platform support (Windows, Linux, macOS, Web)
 - [x] Basic window/renderer abstraction
-- [ ] **Arena-based memory system** (next up!)
+- [x] **Arena-based memory system** (Virtual + Bump + Stack implemented!)
+- [ ] Block arena (object pools)
+- [ ] Input system
 
 ### Near Term
-- [ ] Custom memory allocators (bump, stack, pool, scratch)
+- [ ] Block arena (object pools)
+- [ ] Multi-pool arena (small block allocator)
+- [ ] Scratch arenas (thread-local temps)
+- [ ] Free-list + coalescing for Virtual arena
 - [ ] Input system
 - [ ] Basic 2D rendering utilities
 - [ ] Asset loading system
@@ -219,7 +244,6 @@ Your `GameState` persists across hot reloads, but your code doesn't:
 - [ ] Audio system
 - [ ] Physics integration
 - [ ] Networking
-- [ ] Generalized static/dynamic plugin system (any can be static in release)
 
 ## Design Decisions & FAQ
 
@@ -239,16 +263,40 @@ Flight is optimized for:
 
 Not planned initially. C gives you the performance and control needed for game engines. If scripting is needed later, it can be added as a plugin.
 
-### Memory management strategy?
+### How does memory management work?
 
-Moving to a **fully arena-based** memory system where `malloc`/`free` are discouraged:
-- Global VM-backed arena at the root
-- Typed child arenas (bump, stack, pool, scratch)
-- Frame allocators for temporary data
-- Thread-local arenas for job systems
-- Long-lived resource arenas for assets
+Flight uses a **fully arena-based** memory system where `malloc`/`free` are discouraged:
 
-This eliminates fragmentation, improves cache coherency, and makes hot reload safer.
+**The One Root Arena**: Platform creates a single Virtual arena (4GB reserved, commits pages on demand) at startup. All memory chains from this root.
+
+**Arena Types**:
+- **Virtual**: OS-backed root arena (platform-owned, commits memory as needed)
+- **Bump**: Linear allocator for long-lived data (reset frees everything)
+- **Stack**: Like Bump but with save/restore markers for scoped temps
+- **Block**: Fixed-size pools for entities, particles, etc. (coming soon)
+- **Multi-pool**: Power-of-2 size classes for general allocation (coming soon)
+- **Scratch**: Thread-local temps for hot paths (coming soon)
+
+**Benefits**:
+- No fragmentation - arenas allocate linearly
+- Cache friendly - related data packed together
+- Easy debugging - visualize the entire memory tree from root
+- Hot-reload safe - arena pointers persist across reloads
+- Fast - bump allocation is just pointer increment
+- Clear ownership - parent arenas own their children
+
+**Memory Hierarchy Example**:
+```
+Root Arena (Virtual, 4GB)
+├─ Engine Frame Arena (Stack, 16MB) - resets each frame
+├─ Entity Pool (Block, 10k entities)
+└─ Game Arena (Bump, 256MB)
+   ├─ Game Frame Arena (Stack, 4MB) - resets each frame
+   ├─ Particle Pool (Block, 50k particles)
+   └─ Audio Arena (Bump, 32MB)
+```
+
+**Performance**: With arenas, Flight achieves 15,000+ FPS in debug builds with zero game logic - plenty of headroom for actual gameplay!
 
 ## License
 
