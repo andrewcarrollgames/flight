@@ -4,6 +4,10 @@
 #ifndef VECTOR2_H
 #define VECTOR2_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct Vector2 {
   float x;
   float y;
@@ -44,5 +48,9 @@ float Vector2_Magnitude(Vector2 vec);
 
 // Returns a normalized version of a Vector2. Returns Vector2(0.0f, 0.0f) if it can't be normalized.
 Vector2 Vector2_Normalize(Vector2 vec);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

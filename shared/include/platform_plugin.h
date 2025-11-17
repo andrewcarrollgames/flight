@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #ifndef PLATFORM_PLUGIN_H
 #define PLATFORM_PLUGIN_H
 

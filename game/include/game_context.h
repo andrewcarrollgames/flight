@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #ifndef GAME_CONTEXT_H
 #define GAME_CONTEXT_H
 

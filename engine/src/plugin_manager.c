@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #include "plugin_manager.h"
 #include "plugin_api.h"
 #include "platform_api.h"

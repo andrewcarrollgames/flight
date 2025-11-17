@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #ifndef PLUGIN_MANAGER_H
 #define PLUGIN_MANAGER_H
 

@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #include "engine.h"
 #include "engine_api.h"
 #include "platform.h"

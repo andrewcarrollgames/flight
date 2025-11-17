@@ -1,3 +1,6 @@
+// Copyright (c) 2025 Andrew Carroll Games, LLC
+// All rights reserved.
+
 #include "platform_plugin.h"
 #include "platform.h"
 #include <dlfcn.h>
