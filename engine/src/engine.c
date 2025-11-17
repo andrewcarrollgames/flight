@@ -45,28 +45,31 @@ bool Engine_Initialize(void) {
 #endif
 
   const char* basePath = Platform_GetBasePath();
-  // TODO: (ARC) Arena Allocate
-  char* fullPath = malloc(sizeof(char) * 256);
-  fullPath[0] = '\0';
-  strcat(fullPath, basePath);
+  size_t base_len = strlen(basePath);
+  size_t plugin_len = strlen(game_plugin);
+  size_t total_len = base_len + plugin_len + 1;
+
+  // Stack allocate - no arena needed for such a small temp
+  char fullPath[512]; // Reasonable max path length
+  if (total_len > sizeof(fullPath)) {
+    Platform_LogError("Plugin path too long");
+    return false;
+  }
+
+  strcpy(fullPath, basePath);
   strcat(fullPath, game_plugin);
+
   Platform_Log("Loading plugin @: %s", fullPath);
 
   int game_index = PluginManager_Load(fullPath);
   if (game_index < 0) {
     Platform_LogError("Failed to load game plugin");
-    // TODO: (ARC) Arena Free/Release
-    free(fullPath);
     return false;
   }
-
-  // TODO: (ARC) Arena Free/Release
-  free(fullPath);
 
 #else
   if (!Game_Initialize(&gameState, NULL, NULL)) {
     Platform_LogError("Failed to initialize game");
-    // TODO: (ARC) Arena Free/Release
     return false;
   }
 #endif

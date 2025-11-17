@@ -1,113 +1,121 @@
 // Copyright (c) 2025 Andrew Carroll Games, LLC
 // All rights reserved.
 
-#include "platform_plugin.h"
 #include "platform.h"
+#include "platform_plugin.h"
 #include <dlfcn.h>
-#include <sys/stat.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
 struct PlatformPlugin {
-    void* handle;
-    char path[256];
-    char temp_path[256];
-    time_t last_mtime;
+  void *handle;
+  char path[256];
+  char temp_path[256];
+  time_t last_mtime;
 };
 
-PlatformPlugin* Platform_PluginLoad(const char* path) {
-    PlatformPlugin* plugin = (PlatformPlugin*)malloc(sizeof(PlatformPlugin));
-    if (!plugin) {
-        Platform_LogError("Failed to allocate plugin structure");
-        return NULL;
-    }
+PlatformPlugin *Platform_PluginLoad(const char *path) {
+  Arena *root = Platform_GetRootArena();
 
-    strncpy(plugin->path, path, sizeof(plugin->path) - 1);
-    plugin->path[sizeof(plugin->path) - 1] = '\0';
+  // NOTE: Allocated from root arena. Currently no free-list, so this
+  // memory isn't reclaimed on unload (~256 bytes per plugin).
+  // TODO: Implement free-list for Virtual arena to reclaim this.
+  PlatformPlugin *plugin = Arena_AllocType(root, PlatformPlugin);
+  if (!plugin) {
+    Platform_LogError("Failed to allocate plugin structure");
+    return NULL;
+  }
 
-    // Create temp copy path
-    snprintf(plugin->temp_path, sizeof(plugin->temp_path),
-             "%s.%ld.tmp", path, (long)time(NULL));
+  strncpy(plugin->path, path, sizeof(plugin->path) - 1);
+  plugin->path[sizeof(plugin->path) - 1] = '\0';
 
-    // Copy plugin to temp location
-    char cmd[512];
-    snprintf(cmd, sizeof(cmd), "cp '%s' '%s'", path, plugin->temp_path);
-    if (system(cmd) != 0) {
-        Platform_LogError("Failed to copy plugin: %s", path);
-        free(plugin);
-        return NULL;
-    }
+  // Create temp copy path
+  snprintf(plugin->temp_path, sizeof(plugin->temp_path),
+           "%s.%ld.tmp", path, (long)time(NULL));
 
-    // Load the temp copy
-    plugin->handle = dlopen(plugin->temp_path, RTLD_NOW | RTLD_LOCAL);
-    if (!plugin->handle) {
-        Platform_LogError("Failed to load plugin: %s - %s", plugin->temp_path, dlerror());
-        unlink(plugin->temp_path);
-        free(plugin);
-        return NULL;
-    }
+  // Copy plugin to temp location
+  char cmd[512];
+  snprintf(cmd, sizeof(cmd), "cp '%s' '%s'", path, plugin->temp_path);
+  if (system(cmd) != 0) {
+    Platform_LogError("Failed to copy plugin: %s", path);
+    // TODO: (ARC) Properly free the plugin* from the arena when Root has free-list capability.
+    return NULL;
+  }
 
-    // Store file time for reload checking
-    struct stat st;
-    if (stat(path, &st) == 0) {
-        plugin->last_mtime = st.st_mtime;
-    }
-
-    Platform_Log("Loaded plugin from: %s", path);
-    return plugin;
-}
-
-void Platform_PluginUnload(PlatformPlugin* plugin) {
-    if (!plugin) return;
-
-    if (plugin->handle) {
-        dlclose(plugin->handle);
-        plugin->handle = NULL;
-    }
-
-    // Delete temp file
+  // Load the temp copy
+  plugin->handle = dlopen(plugin->temp_path, RTLD_NOW | RTLD_LOCAL);
+  if (!plugin->handle) {
+    Platform_LogError("Failed to load plugin: %s - %s", plugin->temp_path, dlerror());
     unlink(plugin->temp_path);
+    // TODO: (ARC) Properly free the plugin* from the arena when Root has free-list capability.
+    return NULL;
+  }
 
-    free(plugin);
+  // Store file time for reload checking
+  struct stat st;
+  if (stat(path, &st) == 0) {
+    plugin->last_mtime = st.st_mtime;
+  }
+
+  Platform_Log("Loaded plugin from: %s", path);
+  return plugin;
 }
 
-void* Platform_PluginGetSymbol(PlatformPlugin* plugin, const char* name) {
-    if (!plugin || !plugin->handle) {
-        Platform_LogError("Invalid plugin handle");
-        return NULL;
-    }
+void Platform_PluginUnload(PlatformPlugin *plugin) {
+  if (!plugin)
+    return;
 
-    // Clear any existing error
-    dlerror();
+  if (plugin->handle) {
+    dlclose(plugin->handle);
+    plugin->handle = NULL;
+  }
 
-    void* symbol = dlsym(plugin->handle, name);
+  // Delete temp file
+  unlink(plugin->temp_path);
 
-    const char* error = dlerror();
-    if (error) {
-        Platform_LogError("Symbol not found: %s - %s", name, error);
-        return NULL;
-    }
-
-    return symbol;
+  free(plugin);
 }
 
-bool Platform_PluginNeedsReload(PlatformPlugin* plugin) {
-    if (!plugin) return false;
+void *Platform_PluginGetSymbol(PlatformPlugin *plugin, const char *name) {
+  if (!plugin || !plugin->handle) {
+    Platform_LogError("Invalid plugin handle");
+    return NULL;
+  }
 
-    struct stat st;
-    if (stat(plugin->path, &st) != 0) {
-        return false;
-    }
+  // Clear any existing error
+  dlerror();
 
-    // Check if file was modified
-    return st.st_mtime > plugin->last_mtime;
+  void *symbol = dlsym(plugin->handle, name);
+
+  const char *error = dlerror();
+  if (error) {
+    Platform_LogError("Symbol not found: %s - %s", name, error);
+    return NULL;
+  }
+
+  return symbol;
 }
 
-bool Platform_PluginReload(PlatformPlugin* plugin) {
-  if (!plugin) return false;
+bool Platform_PluginNeedsReload(PlatformPlugin *plugin) {
+  if (!plugin)
+    return false;
+
+  struct stat st;
+  if (stat(plugin->path, &st) != 0) {
+    return false;
+  }
+
+  // Check if file was modified
+  return st.st_mtime > plugin->last_mtime;
+}
+
+bool Platform_PluginReload(PlatformPlugin *plugin) {
+  if (!plugin)
+    return false;
 
   Platform_Log("Reloading plugin: %s", plugin->path);
 
@@ -123,7 +131,7 @@ bool Platform_PluginReload(PlatformPlugin* plugin) {
   }
 
   // Sleep to let OS release file handles
-  usleep(50000);  // 50ms in microseconds
+  usleep(50000); // 50ms in microseconds
 
   // Create new temp path
   snprintf(plugin->temp_path, sizeof(plugin->temp_path),
@@ -154,7 +162,7 @@ bool Platform_PluginReload(PlatformPlugin* plugin) {
   plugin->handle = dlopen(plugin->temp_path, RTLD_NOW | RTLD_LOCAL);
   if (!plugin->handle) {
     Platform_LogError("Failed to load plugin during reload: %s - %s",
-                     plugin->temp_path, dlerror());
+                      plugin->temp_path, dlerror());
     return false;
   }
 

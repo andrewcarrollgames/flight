@@ -19,14 +19,23 @@ float deltaTime = 0.0f;
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
   *appstate = NULL;
 
+  // Initialize platform (creates root arena)
+  if (!Platform_Init()) {
+    Platform_LogError("Failed to initialize platform");
+    SDL_Quit();
+    return 1;
+  }
+
   // Initialize SDL subsystems
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS)) {
     Platform_LogError("Unable to initialize SDL: %s", SDL_GetError());
+    Platform_Shutdown();
     return SDL_APP_FAILURE;
   }
 
   if (!Engine_Initialize()) {
     Platform_LogError("Engine initialization failed!");
+    Platform_Shutdown();
     return SDL_APP_FAILURE;
   }
 
@@ -82,6 +91,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) { // NOLINT (Function sig
 
   Platform_Log("Application is quitting. Result: %d", result);
   Engine_Shutdown();
+  Platform_Shutdown();
   SDL_Quit();
 }
 
@@ -94,15 +104,24 @@ int main(int argc, char* argv[]) {
   float deltaTime = 0.0f;
   bool running = false;
 
+  // Initialize platform (creates root arena)
+  if (!Platform_Init()) {
+    Platform_LogError("Failed to initialize platform");
+    SDL_Quit();
+    return 1;
+  }
+
   // Initialize SDL
   if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS)) {
     Platform_LogError("Failed to initialize SDL: %s", SDL_GetError());
+    Platform_Shutdown();
     return 1;
   }
 
   // Initialize engine
   if (!Engine_Initialize()) {
     Platform_LogError("Failed to initialize engine");
+    Platform_Shutdown();
     SDL_Quit();
     return 1;
   }
@@ -144,6 +163,7 @@ int main(int argc, char* argv[]) {
 
   // Cleanup
   Engine_Shutdown();
+  Platform_Shutdown();
   SDL_Quit();
 
   Platform_Log("Application exiting");

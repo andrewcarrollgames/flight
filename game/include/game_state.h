@@ -7,24 +7,27 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // forward declarations
 typedef struct PlatformWindow PlatformWindow;
 typedef struct PlatformRenderer PlatformRenderer;
+typedef struct Arena Arena;
 
 typedef struct GameState {
+  Arena* arena;           // Game's persistent arena
+  Arena* frame_arena;     // Reset every frame
+
   PlatformWindow *window;
   PlatformRenderer *renderer;
 
-  // FPS variables.
+  // FPS variables
+  uint32_t numUpdates;
+  float accumulatedSeconds;
+  float fps;
+  float fpsUpdateFrequency;
   bool enableFPS;
-} GameState;
 
-#ifdef __cplusplus
-}
-#endif
+  // True if this should be updating right now
+  bool isRunning;
+} GameState;
 
 #endif

@@ -4,6 +4,8 @@
 #ifndef FLIGHT_PLATFORM_H
 #define FLIGHT_PLATFORM_H
 
+#include "arena.h"
+
 #include <stdint.h>
 
 /*
@@ -25,12 +27,17 @@ Path utilities: platform_get_base_path, platform_get_pref_path
 extern "C" {
 #endif
 
+// Platform initialization/shutdown
+bool Platform_Init(void);
+void Platform_Shutdown(void);
+
 void Platform_Log(const char *fmt, ...);
 void Platform_LogError(const char *fmt, ...);
 void Platform_LogWarning(const char *fmt, ...);
 const char *Platform_GetBasePath(void);
 const char *Platform_GetPrefPath(const char *org, const char *app);
 uint64_t Platform_GetTicksNS(void);
+Arena *Platform_GetRootArena(void);
 
 #ifdef __cplusplus
 }

@@ -12,16 +12,24 @@ set(PLATFORM_HEADERS "")
 # PART 1: Platform Library (the API implementation)
 # =======================
 set(PLATFORM_LIB_SOURCES
+	include/platform_memory.h
+	src/arena.c
 	src/vector2.c
 )
 
 if(UNIX)
 	list(APPEND PLATFORM_LIB_SOURCES
+		src/platform_memory_unix.c
 		src/platform_plugin_unix.c
 	)
 elseif(WIN32)
 	list(APPEND PLATFORM_LIB_SOURCES
+		src/platform_memory_win32.c
 		src/platform_plugin_win32.c
+	)
+elseif(EMSCRIPTEN)
+	list(APPEND PLATFORM_LIB_SOURCES
+		src/platform_memory_wasm.c
 	)
 endif()
 
