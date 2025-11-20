@@ -3,6 +3,8 @@ project(engine LANGUAGES C)
 add_library(engine STATIC
     src/engine.c
 	src/plugin_manager.c
+	src/static_manifest.c
+	../extensions/test/test_extension.c #<-Temporary (for verification)
 	include/plugin_manager.h
 )
 

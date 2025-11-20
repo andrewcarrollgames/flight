@@ -7,6 +7,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // forward declarations
 typedef struct PlatformWindow PlatformWindow;
 typedef struct PlatformRenderer PlatformRenderer;
@@ -29,5 +33,9 @@ typedef struct GameState {
   // True if this should be updating right now
   bool isRunning;
 } GameState;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

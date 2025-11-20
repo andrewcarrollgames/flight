@@ -8,6 +8,10 @@
 #include "game_state.h"
 #include "plugin_api.h"
 
+// Not sure if this is what we want, but works for now.
+#include "test_extension_api.h"
+
+
 bool Game_Initialize(void **state, PlatformAPI *platformAPI, EngineAPI *engineAPI) {
   g_game_plugin.platform = platformAPI;
   g_game_plugin.engine = engineAPI;
@@ -95,9 +99,12 @@ void Game_Update(void *state, const float deltaTime) {
   // Reset frame arena at start of each frame
   ARENA_RESET(gameState->frame_arena);
 
-  // Example: allocate temporary data from frame arena
-  // This memory will be automatically freed next frame
-  // char* temp_buffer = ARENA_ALLOC(gameState->frame_arena, 1024);
+  // Test out an engine extension.
+  static bool tested = false; // persists locally (this logic will only run on the first update)
+  if (!tested) {
+    TEST_LOG_HELLO();
+    tested = true;
+  }
 
   // FPS tracking
   gameState->accumulatedSeconds += deltaTime;
@@ -106,7 +113,7 @@ void Game_Update(void *state, const float deltaTime) {
   if (gameState->accumulatedSeconds > gameState->fpsUpdateFrequency) {
     gameState->fps = (float)gameState->numUpdates / gameState->accumulatedSeconds;
 
-    PLATFORM_LOG("Game fps: (%.3f), dt: (%.6f), # updates: (%llu), elapsed time since last print: (%.6f seconds)", gameState->fps, deltaTime, gameState->numUpdates, gameState->accumulatedSeconds);
+    PLATFORM_LOG("Game fps: (%.2f), dt: (%.6f), # updates: (%llu), elapsed time since last print: (%.6f seconds)", gameState->fps, deltaTime, gameState->numUpdates, gameState->accumulatedSeconds);
     PLATFORM_LOG("  Game arena used: %zu / %zu bytes (%.1f%%)",
                  ARENA_GET_USED(gameState->arena),
                  ARENA_GET_CAPACITY(gameState->arena),

@@ -11,14 +11,9 @@
 extern "C" {
 #endif
 
-// Engine API - All engine services available to plugins
+// Engine API - All engine core and extension services available to plugins
 typedef struct EngineAPI {
-  // ECS (placeholder - add when you implement it)
-  // Entity* (*CreateEntity)(void);
-  // void (*DestroyEntity)(Entity* entity);
-
-  // For now, empty struct needs at least one member
-  int _placeholder;
+  void* (*GetExtensionAPI)(const char* name);
 } EngineAPI;
 
 // Getter for engine API (implemented by engine layer)

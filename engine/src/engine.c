@@ -3,14 +3,63 @@
 
 #include "engine.h"
 #include "engine_api.h"
+#include "extension.h"
 #include "platform.h"
+#include "platform_api.h"
 #include <stdlib.h>
 #include <string.h>
 
-// Engine API (mostly empty for now)
+// TODO: (ARC) Make this a dynamic array or size to the exact number of extensions we have (should be known at compile time)?
+#define MAX_EXTENSIONS 32
+static ExtensionInterface* g_extensions[MAX_EXTENSIONS];
+static int g_extension_count = 0;
+
+static void* Engine_GetExtensionAPI(const char* name) {
+  for (int i = 0; i < g_extension_count; ++i) {
+    if (strcmp(g_extensions[i]->name, name) == 0) {
+      return g_extensions[i]->GetSpecificAPI();
+    }
+  }
+  return NULL;
+}
+
+// Update global API instance
 static EngineAPI g_engine_api = {
-  ._placeholder = 0  // Remove when you add real functions
+  .GetExtensionAPI = Engine_GetExtensionAPI
 };
+
+// Global function (called by Manifest)
+void Engine_RegisterExtension(ExtensionInterface* ext) {
+  if (g_extension_count < MAX_EXTENSIONS) {
+    g_extensions[g_extension_count++] = ext;
+    // Init immediately
+    if (ext->Init) {
+      ext->Init(&g_engine_api, Platform_GetAPI());
+    }
+  }
+}
+
+// TODO: (ARC) These add a significant amount of validation(branching) & dispatch as we add extensions.
+// Probably better to just register valid update calls into a concrete "extension update" list in Engine_RegisterExtension.
+void Engine_UpdateStaticExtensions(const float dt) {
+  int extensionIdx = 0;
+  for (extensionIdx = 0; extensionIdx < g_extension_count; ++extensionIdx) {
+    const ExtensionInterface *ext = g_extensions[extensionIdx];
+    if (ext->Update) {
+      ext->Update(dt);
+    }
+  }
+}
+
+void Engine_ShutdownStaticExtensions() {
+  int extensionIdx = 0;
+  for (extensionIdx = 0; extensionIdx < g_extension_count; ++extensionIdx) {
+    const ExtensionInterface *ext = g_extensions[extensionIdx];
+    if (ext->Shutdown) {
+      ext->Shutdown();
+    }
+  }
+}
 
 EngineAPI* Engine_GetAPI(void) {
   return &g_engine_api;
@@ -27,6 +76,10 @@ EngineAPI* Engine_GetAPI(void) {
 
 bool Engine_Initialize(void) {
   Platform_Log("Engine Initializing.");
+
+  // Forward declaration (function defined in static_manifest.c)
+  void Engine_LoadStaticExtensions(void);
+  Engine_LoadStaticExtensions();
 
 #ifdef ENABLE_HOT_RELOAD
   // Hot reload path - use plugin manager
@@ -88,6 +141,8 @@ void Engine_Update(float deltaTime) {
   // Direct call to statically linked game
   Game_Update(gameState, deltaTime);
 #endif
+
+  Engine_UpdateStaticExtensions(deltaTime);
 }
 
 void Engine_Render(void) {
@@ -112,4 +167,6 @@ void Engine_Shutdown(void) {
     Game_Shutdown(&gameState);
   }
 #endif
+
+  Engine_ShutdownStaticExtensions();
 }
