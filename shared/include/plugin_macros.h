@@ -21,7 +21,7 @@ extern "C" {
   static inline EngineAPI *__engine_api(void) { return (state_ptr).engine; }
 
 // Universal Platform Macros
-#ifdef ENABLE_HOT_RELOAD
+#ifdef ENABLE_GAME_AS_PLUGIN
 // Hot reload: indirect through function pointers
 #define PLATFORM_LOG(...) __platform_api()->Log(__VA_ARGS__)
 #define PLATFORM_LOG_ERROR(...) __platform_api()->LogError(__VA_ARGS__)

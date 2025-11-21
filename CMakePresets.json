@@ -71,6 +71,7 @@
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin",
                 "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin",
                 "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/debug/bin",
+                "ENABLE_GAME_AS_PLUGIN": "OFF",
                 "ENABLE_HOT_RELOAD": "OFF",
                 "EXECUTABLE_NAME": "flight_debug"
             }
@@ -84,6 +85,7 @@
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/debug-hotreload/bin",
                 "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/debug-hotreload/bin",
                 "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/debug-hotreload/bin",
+                "ENABLE_GAME_AS_PLUGIN": "OFF",
                 "ENABLE_HOT_RELOAD": "ON",
                 "EXECUTABLE_NAME": "flight_debug_hr"
             }
@@ -97,6 +99,7 @@
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/release/bin",
                 "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/release/bin",
                 "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/release/bin",
+                "ENABLE_GAME_AS_PLUGIN": "OFF",
                 "ENABLE_HOT_RELOAD": "OFF",
                 "EXECUTABLE_NAME": "flight"
             }
@@ -110,6 +113,7 @@
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/bin",
                 "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/bin",
                 "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/relwithdebinfo/bin",
+                "ENABLE_GAME_AS_PLUGIN": "OFF",
                 "ENABLE_HOT_RELOAD": "OFF",
                 "EXECUTABLE_NAME": "flight_dev"
             }
@@ -123,6 +127,7 @@
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/build/minsizerel/bin",
                 "CMAKE_LIBRARY_OUTPUT_DIRECTORY": "${sourceDir}/build/minsizerel/bin",
                 "CMAKE_ARCHIVE_OUTPUT_DIRECTORY": "${sourceDir}/build/minsizerel/bin",
+                "ENABLE_GAME_AS_PLUGIN": "OFF",
                 "ENABLE_HOT_RELOAD": "OFF",
                 "EXECUTABLE_NAME": "flight"
             }

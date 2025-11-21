@@ -6,6 +6,11 @@ set(EXECUTABLE_NAME ${PROJECT_NAME})
 # Enable PIC globally for all static libraries
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+if(${ENABLE_HOT_RELOAD})
+    message("flight/CMakeLists: Hot reload enabled for this configuration. Turn on 'ENABLE_GAME_AS_PLUGIN'.")
+    set(ENABLE_GAME_AS_PLUGIN ON)
+endif()
+
 # platform is our entry point (will instantiate and update engine)
 add_subdirectory(platform)
 

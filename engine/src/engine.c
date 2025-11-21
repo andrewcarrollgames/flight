@@ -65,7 +65,7 @@ EngineAPI* Engine_GetAPI(void) {
   return &g_engine_api;
 }
 
-#ifdef ENABLE_HOT_RELOAD
+#ifdef ENABLE_GAME_AS_PLUGIN
     // Hot reload build - use plugin system
     #include "plugin_manager.h"
 #else
@@ -81,7 +81,7 @@ bool Engine_Initialize(void) {
   void Engine_LoadStaticExtensions(void);
   Engine_LoadStaticExtensions();
 
-#ifdef ENABLE_HOT_RELOAD
+#ifdef ENABLE_GAME_AS_PLUGIN
   // Hot reload path - use plugin manager
   if (!PluginManager_Init()) {
     Platform_LogError("Failed to initialize plugin manager");
@@ -131,9 +131,13 @@ bool Engine_Initialize(void) {
 }
 
 void Engine_Update(float deltaTime) {
-#ifdef ENABLE_HOT_RELOAD
-  // Check for hot reloads
-  PluginManager_CheckReloadAll();
+#ifdef ENABLE_GAME_AS_PLUGIN
+
+  // Only include hot reload checks if ordered to at compile time by the config.
+  #ifdef ENABLE_HOT_RELOAD
+    // Check for hot reloads
+    PluginManager_CheckReloadAll();
+  #endif
 
   // Update all plugins
   PluginManager_UpdateAll(deltaTime);
@@ -146,7 +150,7 @@ void Engine_Update(float deltaTime) {
 }
 
 void Engine_Render(void) {
-#ifdef ENABLE_HOT_RELOAD
+#ifdef ENABLE_GAME_AS_PLUGIN
   // Render all plugins
   PluginManager_RenderAll();
 #else
@@ -158,7 +162,7 @@ void Engine_Render(void) {
 void Engine_Shutdown(void) {
   Platform_Log("Engine Shutting Down.");
 
-#ifdef ENABLE_HOT_RELOAD
+#ifdef ENABLE_GAME_AS_PLUGIN
   // Shutdown plugin system
   PluginManager_Shutdown();
 #else

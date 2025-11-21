@@ -178,100 +178,6 @@ flight/
 └── CMakeLists.txt
 ```
 
-## Writing Extensions
-
-Extensions are the modular pieces of Flight's core. They're written in C, statically compiled, always ship, and provide engine capabilities.
-
-### Extension Interface
-
-```c
-#include "extension.h"
-#include "platform_api.h"
-
-// Your extension's API (what other code calls)
-typedef struct MyExtensionAPI {
-    void (*DoSomething)(int param);
-    int (*GetValue)(void);
-} MyExtensionAPI;
-
-// Private state
-static PlatformAPI* g_platform = NULL;
-static int g_my_value = 0;
-
-// API implementation
-static void MyExt_DoSomething(int param) {
-    g_my_value = param;
-    g_platform->Log("Did something: %d", param);
-}
-
-static int MyExt_GetValue(void) {
-    return g_my_value;
-}
-
-static MyExtensionAPI g_api = {
-    .DoSomething = MyExt_DoSomething,
-    .GetValue = MyExt_GetValue
-};
-
-// Extension lifecycle
-static bool MyExt_Init(EngineAPI* engine, PlatformAPI* platform) {
-    g_platform = platform;
-    platform->Log("MyExtension initialized");
-    return true;
-}
-
-static void MyExt_Update(float dt) {
-    // Update logic (if needed)
-}
-
-static void MyExt_Shutdown(void) {
-    g_platform->Log("MyExtension shutdown");
-}
-
-static void* MyExt_GetSpecificAPI(void) {
-    return &g_api;
-}
-
-// Extension declaration - registered at startup
-ExtensionInterface g_extension_myext = {
-    .name = "MyExtension",
-    .Init = MyExt_Init,
-    .Update = MyExt_Update,
-    .Shutdown = MyExt_Shutdown,
-    .GetSpecificAPI = MyExt_GetSpecificAPI
-};
-```
-
-### Using Extensions from Plugins
-
-```c
-// In your game/plugin code
-#include "plugin_macros.h"
-
-// Access extension API (will be generated in future)
-// For now, manually add to plugin_macros.h:
-#ifdef ENABLE_HOT_RELOAD
-    #define MYEXT_DO_SOMETHING(param) \
-            MyExtensionAPI* api = (MyExtensionAPI*)__engine_api()->GetExtensionAPI("MyExtension"); \
-            if (api) api->DoSomething(param)
-#else
-    #define MYEXT_DO_SOMETHING MyExt_DoSomething
-#endif
-
-// Use it
-void Game_Update(void* state, float dt) {
-    MYEXT_DO_SOMETHING(42);
-}
-```
-
-### Extension Guidelines
-
-- **C only**: Extensions must be C to keep the core buildable and maintainable
-- **Always ship**: If you include an extension, it ships. Non-negotiable.
-- **Stateless when possible**: Prefer arena-allocated state over globals
-- **Version your APIs**: Breaking changes need version bumps (once core hits 1.0)
-- **Update only if needed**: If your extension doesn't need per-frame updates, set `Update = NULL` to avoid unnecessary branches
-
 ## Writing Game Code
 
 Your game is a plugin that implements the `PluginAPI` interface. It can be written in any language with C FFI (C, Rust, Zig, C++, Odin, etc.). All memory comes from arenas - no malloc!
@@ -441,6 +347,100 @@ Any language with C FFI works:
 - **Odin**: Simple, gamedev-focused, clean C interop
 - **C**: Maximum control, zero overhead
 
+## Writing Extensions
+
+Extensions are the modular pieces of Flight's core. They're written in C, statically compiled, always ship, and provide engine capabilities.
+
+### Extension Interface
+
+```c
+#include "extension.h"
+#include "platform_api.h"
+
+// Your extension's API (what other code calls)
+typedef struct MyExtensionAPI {
+    void (*DoSomething)(int param);
+    int (*GetValue)(void);
+} MyExtensionAPI;
+
+// Private state
+static PlatformAPI* g_platform = NULL;
+static int g_my_value = 0;
+
+// API implementation
+static void MyExt_DoSomething(int param) {
+    g_my_value = param;
+    g_platform->Log("Did something: %d", param);
+}
+
+static int MyExt_GetValue(void) {
+    return g_my_value;
+}
+
+static MyExtensionAPI g_api = {
+    .DoSomething = MyExt_DoSomething,
+    .GetValue = MyExt_GetValue
+};
+
+// Extension lifecycle
+static bool MyExt_Init(EngineAPI* engine, PlatformAPI* platform) {
+    g_platform = platform;
+    platform->Log("MyExtension initialized");
+    return true;
+}
+
+static void MyExt_Update(float dt) {
+    // Update logic (if needed)
+}
+
+static void MyExt_Shutdown(void) {
+    g_platform->Log("MyExtension shutdown");
+}
+
+static void* MyExt_GetSpecificAPI(void) {
+    return &g_api;
+}
+
+// Extension declaration - registered at startup
+ExtensionInterface g_extension_myext = {
+    .name = "MyExtension",
+    .Init = MyExt_Init,
+    .Update = MyExt_Update,
+    .Shutdown = MyExt_Shutdown,
+    .GetSpecificAPI = MyExt_GetSpecificAPI
+};
+```
+
+### Using Extensions from Plugins
+
+```c
+// In your game/plugin code
+#include "plugin_macros.h"
+
+// Access extension API (will be generated in future)
+// For now, manually add to plugin_macros.h:
+#ifdef ENABLE_HOT_RELOAD
+    #define MYEXT_DO_SOMETHING(param) \
+            MyExtensionAPI* api = (MyExtensionAPI*)__engine_api()->GetExtensionAPI("MyExtension"); \
+            if (api) api->DoSomething(param)
+#else
+    #define MYEXT_DO_SOMETHING MyExt_DoSomething
+#endif
+
+// Use it
+void Game_Update(void* state, float dt) {
+    MYEXT_DO_SOMETHING(42);
+}
+```
+
+### Extension Guidelines
+
+- **C only**: Extensions must be C to keep the core buildable and maintainable
+- **Always ship**: If you include an extension, it ships. Non-negotiable.
+- **Stateless when possible**: Prefer arena-allocated state over globals
+- **Version your APIs**: Breaking changes need version bumps (once core hits 1.0)
+- **Update only if needed**: If your extension doesn't need per-frame updates, set `Update = NULL` to avoid unnecessary branches
+
 ### Using Flight's Arenas from Other Languages
 
 Flight's arena system is exposed through the Platform API and works from any language:
@@ -571,14 +571,16 @@ Make a `MyGamePresets.json` in your project (git-ignored or checked in, your cho
         "displayName": "Release with Modding",
         "inherits": "windows-release",
         "cacheVariables": {
-            "SHIP_PLUGIN_GAME": "ON"
+            "ENABLE_GAME_AS_PLUGIN": "ON",
+			"ENABLE_HOT_RELOAD": "ON"
         }
     }, {
         "name": "my-game-release-static",
         "displayName": "Release Single EXE",
         "inherits": "windows-release",
         "cacheVariables": {
-            "SHIP_PLUGIN_GAME": "OFF"
+            "ENABLE_GAME_AS_PLUGIN": "OFF",
+			"ENABLE_HOT_RELOAD": "OFF"
         }
     }],
     "buildPresets": [{
@@ -596,12 +598,12 @@ cmake --build --preset build-my-game-release-modding
 
 ### Shipping Options
 
-**Ship as DLL (`SHIP_PLUGIN_GAME: ON`):**
+**Ship as DLL (`ENABLE_GAME_AS_PLUGIN: ON`):**
 ```
 MyGame/
+├── /data               # The assets required for your game (optional)
 ├── flight.exe          # Engine + extensions
 ├── game.dll            # Your game
-└── SDL3.dll
 ```
 
 **Benefits:**
@@ -613,11 +615,11 @@ MyGame/
 - Multiple files to distribute
 - One indirect call per frame (negligible overhead)
 
-**Ship as static (`SHIP_PLUGIN_GAME: OFF`):**
+**Ship as static (`ENABLE_GAME_AS_PLUGIN: OFF`):**
 ```
 MyGame/
+├── /data               # The assets required for your game (optional)
 ├── flight.exe          # Engine + extensions + game (all baked in)
-└── SDL3.dll
 ```
 
 **Benefits:**

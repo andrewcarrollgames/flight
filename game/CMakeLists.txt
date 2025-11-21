@@ -6,10 +6,18 @@ set(GAME_FILES
 	include/game_state.h
 )
 
-if(ENABLE_HOT_RELOAD)
+if(${ENABLE_GAME_AS_PLUGIN})
+	message("game/CMakeLists.txt: Game enabled as plugin.")
 	add_library(game SHARED ${GAME_FILES})
-	target_compile_definitions(game PRIVATE ENABLE_HOT_RELOAD)
+	target_compile_definitions(game PRIVATE ENABLE_GAME_AS_PLUGIN)
+
+	if(${ENABLE_HOT_RELOAD})
+		message("game/CMakeLists.txt: Hot Reload is enabled.")
+		target_compile_definitions(game PRIVATE ENABLE_HOT_RELOAD)
+	endif()
+
 else()
+	message("game/CMakeLists.txt: Game will link statically.")
 	add_library(game STATIC ${GAME_FILES})
 endif()
 

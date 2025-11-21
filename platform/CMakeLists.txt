@@ -52,7 +52,7 @@ endif()
 add_library(platform_lib STATIC ${PLATFORM_LIB_SOURCES} ${PLATFORM_HEADERS})
 
 # Export symbols for the plugins, which will include platform-lib
-if(${ENABLE_HOT_RELOAD})
+if(${ENABLE_GAME_AS_PLUGIN})
 	if(UNIX)
 		target_link_options(platform_lib PRIVATE "-rdynamic")
 	elseif(WIN32)
