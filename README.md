@@ -6,675 +6,360 @@ A multi-platform game engine focused on runtime performance and developer iterat
 
 Flight is built around three core rules:
 
-1. **Protect the Heart**: Platform and engine core stay lean, clean C. No language soup, no build complexity, no clever magic. If it makes the core harder to understand, it doesn't belong.
+1. **Protect the Heart**: Platform and engine core stay lean, clean C. No language soup, no build complexity, no clever magic.
 
-2. **Developer Flexibility**: Hot-reload everything during development. Use any language for plugins. Add extensions easily. Configure via presets, not #ifdefs. The build system generates boilerplate so you don't hand-write it.
+2. **Developer Flexibility**: Hot-reload everything during development. Use any language for plugins. Add extensions easily. Configure via presets, not #ifdefs.
 
-3. **Player Performance**: Release builds are static, direct calls, zero overhead. Small executables. No runtime indirection. Arena allocations = cache-friendly. Simple code the compiler can optimize.
+3. **Player Performance**: Release builds are static, direct calls, zero overhead. Small executables. No runtime indirection. Arena allocations = cache-friendly.
 
 These rules reinforce each other: Extensions are written in C (protects the heart), hot-reload during development (flexibility), and compile to direct calls in release (performance).
 
 ## Architecture
 
-Flight uses a layered architecture that separates platform, engine, and application concerns:
-
 ```
-┌─────────────────────────────────────────────┐
-│  Platform (SDL3)                            │
-│  - Window/Input/Audio                       │
-│  - Memory Management                        │
-│  - Logging                                  │
-└──────────────┬──────────────────────────────┘
-               │
-┌──────────────▼──────────────────────────────┐
-│  Engine + Extensions                        │
-│  - Plugin Manager (Hot Reload)              │
-│  - Core Extensions (Physics, ECS, etc.)     │
-│  - Rendering Extensions (Vulkan, D3D, etc.) │
-│  - Tool Extensions (Editor, Profiler, etc.) │
-└──────────────┬──────────────────────────────┘
-               │
-┌──────────────▼──────────────────────────────┐
-│  Game (Extension or Plugin)                 │
-│  - Your game logic                          │
-│  - Static extension in release              │
-│  - Hot-reloadable plugin in development     │
-└─────────────────────────────────────────────┘
+┌───────────────────────────────────────────────┐
+│  Platform (SDL3)                              │
+│  - Window/Input/Audio                         │
+│  - Memory Management (Arenas)                 │
+│  - Logging                                    │
+└──────────────────┬────────────────────────────┘
+                   │
+┌──────────────────▼────────────────────────────┐
+│  Engine + Extensions (opt-in)                 │
+│  - Plugin Manager (Hot Reload)                │
+│  - Extensions: Input, 2D Renderer, ECS, etc.  │
+└──────────────────┬────────────────────────────┘
+                   │
+┌──────────────────▼────────────────────────────┐
+│  Game Module                                  │
+│  - Your game logic                            │
+│  - C (static or plugin) or any language (plugin) │
+└───────────────────────────────────────────────┘
 ```
 
-### Key Architectural Decisions
+### The Core Is Modular
 
-**Extensions vs Plugins**: Flight distinguishes between two types of code modules:
+Flight's "engine" isn't a monolith - it's a collection of small, optional pieces:
 
-- **Extensions**: Statically linked C components that define your engine's core capabilities. These are the modular pieces of Flight's heart - always present, always ship. If you include it, you need it. Extensions compile to zero-cost direct calls in release builds. Examples: ECS, physics system, audio mixer, custom rendering features.
+- **Platform Layer**: Always present. Provides windowing, arena-based memory, logging, and OS abstraction.
 
-- **Plugins**: Dynamically loaded modules (any language) for development iteration or optional runtime features. Hot-reloadable during development. Can ship as DLLs if you want modding/patching, or be excluded entirely. Examples: your game, level editor, profiler, debug visualizer.
+- **Engine Core**: Minimal. Just the plugin manager for hot-reload support.
 
-**Your game is just a plugin.** In development it hot-reloads. In release, you choose: ship it as a DLL (for modding/patching) or statically link it (single executable). Both work. Your choice based on distribution needs.
+- **Extensions**: Optional C modules providing engine capabilities (input, rendering, ECS, physics wrappers). **You link only what you need.** Unused extensions aren't compiled - zero bytes, zero overhead.
 
-**Macro Magic**: The `plugin_macros.h` system provides a unified API that automatically switches between hot-reloadable (indirect) and static (direct) calls based on build configuration:
+- **Game Module**: Your application code. Can be statically linked C (fast recompile) or a hot-reloadable plugin in any language (instant iteration).
+
+**Key insight:** Extensions ARE the optional parts of the engine. Your game module USES the platform and whatever extensions you've linked.
+
+#### Zero-Cost Extensions
+
+```
+Your Game Executable
+├─ Platform (always)
+├─ Extensions (YOU choose)
+│  ├─ input       ✓ linked
+│  ├─ renderer_2d ✓ linked  
+│  ├─ renderer_3d ✗ not linked = not compiled
+│  └─ networking  ✗ not linked = not compiled
+└─ Game Module
+```
+
+If you don't link an extension, it's not in your executable. Zero bytes, zero overhead.
+
+### How Hot Reload Works
+
+Generated macros switch behavior based on build mode:
 
 ```c
-// In your code, just write:
-PLATFORM_LOG("Hello, world!");
+// Your game code:
+INPUT_IS_KEY_PRESSED(KEY_SPACE);
 
-// Development build: calls through function pointer
-// Release build: direct call to Platform_Log() - zero overhead
+// Development (hot-reload): indirect call via function pointer
+// Release (static): direct call to Input_IsKeyPressed()
 ```
 
-This file will be auto-generated by the build system in the future - extensions describe their APIs, macros get generated for both hot-reload and static paths. Zero manual maintenance.
+Write code once, works in both modes. Hot reload during development, zero-cost in release.
 
-**Memory Model**: Flight uses a fully arena-based memory system with no `malloc`/`free`:
+### Memory Model
+
+Flight uses fully arena-based memory (no malloc/free):
 
 ```
 Root Arena (Virtual, 4GB reserved)
-├─ Engine Frame Arena (Stack, 16MB) - resets each frame
-├─ Entity Pool (Block, 10k entities)
-└─ Game Arena (Bump, 256MB)
-   ├─ Game Frame Arena (Stack, 4MB) - resets each frame
-   ├─ Particle Pool (Block, 50k particles)
-   └─ Audio Arena (Bump, 32MB)
+├─ Engine Frame Arena (resets each frame)
+└─ Game Arena
+   ├─ Game Frame Arena (resets each frame)
+   └─ Subsystem Arenas (entities, particles, etc.)
 ```
 
-All memory chains from a single OS-backed Virtual arena created at startup. Benefits:
-- No fragmentation - arenas allocate linearly
-- Cache friendly - related data packed together
-- Easy debugging - visualize the entire memory tree
-- Hot-reload safe - arena pointers persist across reloads
-- Fast - bump allocation is just pointer increment
-- Clear ownership - parent arenas own their children
-
-**Performance**: With arenas, Flight achieves 15,000+ FPS in debug builds with zero game logic - plenty of headroom for actual gameplay!
+Benefits: no fragmentation, cache-friendly, hot-reload safe, fast allocation, clear ownership.
 
 ## Building
-
-Flight uses CMake with presets for different platforms and configurations.
-
-### Prerequisites
-
-- CMake 3.5 or newer
-- C compiler (MSVC on Windows, Clang on macOS/Linux)
-- SDL3 (included as submodule)
-- Ninja build system
-- Emscripten SDK (optional, for web builds)
 
 ### Quick Start
 
 ```bash
-# Clone with submodules
 git clone --recursive https://github.com/yourusername/flight.git
 cd flight
 
-# Configure and build (pick your platform)
-cmake --preset windows-debug        # Windows development build
-cmake --preset linux-debug          # Linux development build
-cmake --preset macos-debug          # macOS development build
-
+# Configure and build
+cmake --preset windows-debug
 cmake --build --preset build-windows-debug
 ```
 
+### Build Configuration
+
+Two independent flags control build behavior:
+
+**ENABLE_HOT_RELOAD** (workflow choice)
+- `OFF` (default): Game statically linked, full recompile workflow
+- `ON`: Game is DLL, instant hot-reload
+
+**SHIP_PLUGIN_GAME** (release distribution, only when ENABLE_HOT_RELOAD=OFF)
+- `OFF` (default): Game baked into .exe
+- `ON`: Game ships as separate DLL (enables modding)
+
 ### Available Presets
 
-Each platform has multiple configurations:
-
-- **debug**: Full debug info, no optimizations, static game link
-- **debug-hotreload**: Debug with hot-reload enabled (game is a DLL/SO)
-- **release**: Fully optimized, static game link
-- **relwithdebinfo**: Optimized with debug symbols (recommended for development)
-- **minsizerel**: Optimized for size
-
-Example presets:
-- `windows-debug-hotreload` - Development with instant code reload
-- `linux-relwithdebinfo` - Optimized but debuggable
-- `emscripten-release` - Web deployment build
+- `windows-debug` / `linux-debug` / `macos-debug` - Static link, fast recompile
+- `windows-debug-hotreload` - Hot reload enabled
+- `windows-release` - Optimized, static link
+- `emscripten-release` - Web builds
 
 ### Hot Reload Workflow
 
 ```bash
-# Terminal 1: Build and run with hot reload
+# Terminal 1: Run with hot reload
 cmake --preset windows-debug-hotreload
 cmake --build --preset build-windows-debug-hotreload
 ./build/debug-hotreload/bin/flight_debug_hr.exe
 
-# Terminal 2: Make changes to game code
-# Edit game/src/game.c
+# Terminal 2: Edit game code, rebuild
 cmake --build --preset build-windows-debug-hotreload --target game
-
-# Game automatically reloads in Terminal 1!
+# Changes appear instantly in Terminal 1
 ```
-
-## Project Structure
-
-```
-flight/
-├── platform/          # Platform abstraction layer (SDL3 backend)
-│   ├── src/          
-│   │   ├── sdl/              # SDL3 implementation
-│   │   ├── platform_plugin_*.c  # Plugin loading (OS-specific)
-│   │   ├── platform_memory_*.c  # Virtual memory (OS-specific)
-│   │   └── arena.c           # Arena allocator implementations
-│   └── include/
-├── engine/           # Core engine systems
-│   ├── src/
-│   │   ├── engine.c          # Main engine loop
-│   │   ├── plugin_manager.c  # Hot reload system
-│   │   └── static_manifest.c # Extension registration
-│   └── include/
-├── extensions/       # Engine extensions (ship with game)
-│   └── test/
-│       ├── test_extension.c  # Example extension
-│       └── test_extension_api.h
-├── game/             # Your game code (plugin - C or any language)
-│   ├── src/
-│   │   └── game.c            # Game implementation
-│   └── include/
-├── shared/           # Interface contracts between layers
-│   └── include/
-│       ├── platform_api.h    # Platform services
-│       ├── engine_api.h      # Engine services
-│       ├── extension.h       # Extension interface
-│       ├── plugin_api.h      # Plugin interface
-│       └── plugin_macros.h   # Hot-reload macros
-└── CMakeLists.txt
-```
-
-## Writing Game Code
-
-Your game is a plugin that implements the `PluginAPI` interface. It can be written in any language with C FFI (C, Rust, Zig, C++, Odin, etc.). All memory comes from arenas - no malloc!
-
-```c
-#include "game.h"
-#include "game_context.h"
-#include "plugin_macros.h"
-
-// Initialize: allocate and set up your state from arenas
-bool Game_Initialize(void** state, PlatformAPI* platform, EngineAPI* engine) {
-    // Get root arena from platform
-    Arena* root = PLATFORM_GET_ROOT_ARENA();
-    
-    // Create game's persistent arena
-    Arena* game_arena = ARENA_CREATE_BUMP(root, MEGABYTES(256), DEFAULT_ALIGNMENT);
-    ARENA_SET_DEBUG_NAME(game_arena, "Game");
-    
-    // Allocate game state from game arena
-    GameState* gs = ARENA_ALLOC(game_arena, sizeof(GameState), DEFAULT_ALIGNMENT);
-    *state = gs;
-    gs->arena = game_arena;
-    
-    // Create subsystem arenas
-    gs->frame_arena = ARENA_CREATE_STACK(game_arena, MEGABYTES(4), DEFAULT_ALIGNMENT);
-    ARENA_SET_DEBUG_NAME(gs->frame_arena, "Game::Frame");
-    
-    // Use platform services through macros
-    gs->window = PLATFORM_CREATE_WINDOW("My Game", 1280, 720, PLATFORM_RENDERER_OPENGL);
-    gs->renderer = PLATFORM_CREATE_RENDERER(gs->window);
-    
-    return true;
-}
-
-// Update: called every frame with delta time
-void Game_Update(void* state, float dt) {
-    GameState* gs = (GameState*)state;
-    
-    // Reset frame arena at start of each frame
-    ARENA_RESET(gs->frame_arena);
-    
-    // Allocate temp data - automatically freed next frame
-    TempData* temp = ARENA_ALLOC(gs->frame_arena, sizeof(TempData), DEFAULT_ALIGNMENT);
-    
-    // Your game logic here
-    PLATFORM_LOG("FPS: %.2f", 1.0f / dt);
-}
-
-// Render: draw your game
-void Game_Render(void* state) {
-    GameState* gs = (GameState*)state;
-    
-    PLATFORM_RENDERER_CLEAR(gs->renderer);
-    // ... draw stuff ...
-    PLATFORM_RENDERER_PRESENT(gs->renderer);
-}
-
-// Shutdown: clean up your state
-void Game_Shutdown(void** state) {
-    GameState* gs = (GameState*)*state;
-    
-    PLATFORM_DESTROY_RENDERER(gs->renderer);
-    PLATFORM_DESTROY_WINDOW(gs->window);
-    
-    // Destroy game arena (frees ALL game memory including frame_arena)
-    ARENA_DESTROY(gs->arena);
-    *state = NULL;
-}
-```
-
-## Polyglot Plugins
-
-Plugins can be written in **any language** with C FFI - not just C. The only requirement is implementing the `PluginAPI` interface.
-
-### Why This Works
-
-Flight's plugin system uses pure C ABI:
-- Export a `GetPluginAPI()` function
-- Return a struct with function pointers
-- Manage your state however you want
-
-Every language with FFI support can do this. Use Flight's arenas for interop data, or bring your own allocator - we don't care.
-
-### Example: Rust Plugin
-
-```rust
-// Cargo.toml
-[lib]
-crate-type = ["cdylib"]  # Dynamic library for hot-reload
-
-// src/lib.rs
-use std::ffi::c_void;
-
-#[repr(C)]
-struct GameState {
-    entities: Vec<Entity>,
-    frame_count: u64,
-}
-
-#[no_mangle]
-pub extern "C" fn game_init(
-    state: *mut *mut c_void,
-    platform: *mut PlatformAPI,
-    engine: *mut EngineAPI
-) -> bool {
-    let gs = Box::new(GameState {
-        entities: Vec::new(),
-        frame_count: 0,
-    });
-    
-    unsafe {
-        *state = Box::into_raw(gs) as *mut c_void;
-        
-        // Use Flight's platform API
-        let log = (*platform).Log.unwrap();
-        log(b"Rust game initialized!\0".as_ptr() as *const i8);
-    }
-    
-    true
-}
-
-#[no_mangle]
-pub extern "C" fn game_update(state: *mut c_void, dt: f32) {
-    let gs = unsafe { &mut *(state as *mut GameState) };
-    gs.frame_count += 1;
-    
-    // Your Rust game logic here
-}
-
-// ... render, shutdown functions ...
-
-#[no_mangle]
-pub extern "C" fn GetPluginAPI() -> *mut PluginAPI {
-    static mut API: PluginAPI = PluginAPI {
-        platform: std::ptr::null_mut(),
-        engine: std::ptr::null_mut(),
-        version: 1,
-        name: b"Rust Game\0".as_ptr() as *const i8,
-        init: Some(game_init),
-        update: Some(game_update),
-        render: Some(game_render),
-        shutdown: Some(game_shutdown),
-    };
-    
-    unsafe { &mut API }
-}
-```
-
-**Build and run:**
-```bash
-# Development: hot-reload
-cargo build
-cmake --preset windows-debug-hotreload
-./build/debug-hotreload/bin/flight_debug_hr.exe
-
-# Release: ship as DLL or static link (see Shipping Configuration)
-cargo build --release
-cmake --preset my-game-release
-```
-
-### Supported Languages
-
-Any language with C FFI works:
-- **Rust**: Memory safety, modern features, great tooling
-- **Zig**: Comptime metaprogramming, explicit control, C interop
-- **C++**: STL, templates, existing gamedev libraries
-- **Odin**: Simple, gamedev-focused, clean C interop
-- **C**: Maximum control, zero overhead
 
 ## Writing Extensions
 
-Extensions are the modular pieces of Flight's core. They're written in C, statically compiled, always ship, and provide engine capabilities.
+Extensions are modular pieces of Flight's engine core. Write an extension when adding reusable engine capabilities (renderer, input, ECS, physics wrapper) that multiple games would use.
 
 ### Extension Interface
 
 ```c
 #include "extension.h"
-#include "platform_api.h"
 
-// Your extension's API (what other code calls)
 typedef struct MyExtensionAPI {
     void (*DoSomething)(int param);
-    int (*GetValue)(void);
 } MyExtensionAPI;
 
-// Private state
-static PlatformAPI* g_platform = NULL;
-static int g_my_value = 0;
-
-// API implementation
-static void MyExt_DoSomething(int param) {
-    g_my_value = param;
-    g_platform->Log("Did something: %d", param);
-}
-
-static int MyExt_GetValue(void) {
-    return g_my_value;
-}
-
 static MyExtensionAPI g_api = {
-    .DoSomething = MyExt_DoSomething,
-    .GetValue = MyExt_GetValue
+    .DoSomething = MyExt_DoSomething
 };
 
-// Extension lifecycle
 static bool MyExt_Init(EngineAPI* engine, PlatformAPI* platform) {
-    g_platform = platform;
     platform->Log("MyExtension initialized");
     return true;
-}
-
-static void MyExt_Update(float dt) {
-    // Update logic (if needed)
-}
-
-static void MyExt_Shutdown(void) {
-    g_platform->Log("MyExtension shutdown");
 }
 
 static void* MyExt_GetSpecificAPI(void) {
     return &g_api;
 }
 
-// Extension declaration - registered at startup
 ExtensionInterface g_extension_myext = {
     .name = "MyExtension",
     .Init = MyExt_Init,
-    .Update = MyExt_Update,
+    .Update = NULL,  // Optional
     .Shutdown = MyExt_Shutdown,
     .GetSpecificAPI = MyExt_GetSpecificAPI
 };
 ```
 
-### Using Extensions from Plugins
+Extensions must be C, are statically compiled, and provide their API via `GetSpecificAPI()`. Generated macros make them callable from hot-reloadable game code.
+
+## Writing Game Code
+
+Your game implements the `PluginAPI` interface. Can be written in C (static or plugin) or any language with C FFI (must be plugin).
+
+### C Game Example
 
 ```c
-// In your game/plugin code
+#include "game.h"
 #include "plugin_macros.h"
 
-// Access extension API (will be generated in future)
-// For now, manually add to plugin_macros.h:
-#ifdef ENABLE_HOT_RELOAD
-    #define MYEXT_DO_SOMETHING(param) \
-            MyExtensionAPI* api = (MyExtensionAPI*)__engine_api()->GetExtensionAPI("MyExtension"); \
-            if (api) api->DoSomething(param)
-#else
-    #define MYEXT_DO_SOMETHING MyExt_DoSomething
-#endif
+bool Game_Initialize(void** state, PlatformAPI* platform, EngineAPI* engine) {
+    // Get root arena and create game arena
+    Arena* root = PLATFORM_GET_ROOT_ARENA();
+    Arena* game_arena = ARENA_CREATE_BUMP(root, MEGABYTES(256), DEFAULT_ALIGNMENT);
+    
+    GameState* gs = ARENA_ALLOC(game_arena, sizeof(GameState));
+    *state = gs;
+    gs->arena = game_arena;
+    
+    // Create window, renderer, etc.
+    gs->window = PLATFORM_CREATE_WINDOW("My Game", 1280, 720, PLATFORM_RENDERER_OPENGL);
+    gs->renderer = PLATFORM_CREATE_RENDERER(gs->window);
+    
+    return true;
+}
 
-// Use it
 void Game_Update(void* state, float dt) {
-    MYEXT_DO_SOMETHING(42);
+    GameState* gs = (GameState*)state;
+    // Game logic using extension macros:
+    // INPUT_IS_KEY_PRESSED(KEY_SPACE);
+}
+
+void Game_Render(void* state) {
+    GameState* gs = (GameState*)state;
+    PLATFORM_RENDERER_CLEAR(gs->renderer);
+    // Draw calls
+    PLATFORM_RENDERER_PRESENT(gs->renderer);
+}
+
+void Game_Shutdown(void** state) {
+    GameState* gs = (GameState*)*state;
+    ARENA_DESTROY(gs->arena);  // Frees all game memory
+    *state = NULL;
 }
 ```
 
-### Extension Guidelines
+All memory comes from arenas. No malloc/free needed.
 
-- **C only**: Extensions must be C to keep the core buildable and maintainable
-- **Always ship**: If you include an extension, it ships. Non-negotiable.
-- **Stateless when possible**: Prefer arena-allocated state over globals
-- **Version your APIs**: Breaking changes need version bumps (once core hits 1.0)
-- **Update only if needed**: If your extension doesn't need per-frame updates, set `Update = NULL` to avoid unnecessary branches
+### Polyglot Games (Plugin Only)
 
-### Using Flight's Arenas from Other Languages
+Non-C games must be built as plugins (DLLs). Implement the `PluginAPI` interface in your language:
 
-Flight's arena system is exposed through the Platform API and works from any language:
+**Rust Example:**
 
 ```rust
-// Allocate from Flight's arenas in Rust
-unsafe {
-    let root = ((*platform).GetRootArena)();
-    let game_arena = ((*platform).ArenaCreateBump)(root, 256 * 1024 * 1024, 8);
-    
-    // Allocate game state from arena
-    let state_ptr = ((*platform).ArenaAlloc)(game_arena, size_of::<GameState>());
-    let gs = &mut *(state_ptr as *mut GameState);
+// Cargo.toml: crate-type = ["cdylib"]
+
+#[no_mangle]
+pub extern "C" fn GetPluginAPI() -> *mut PluginAPI {
+    static mut API: PluginAPI = PluginAPI {
+        version: 1,
+        name: b"Rust Game\0".as_ptr() as *const i8,
+        init: Some(game_init),
+        update: Some(game_update),
+        render: Some(game_render),
+        shutdown: Some(game_shutdown),
+        // ...
+    };
+    unsafe { &mut API }
 }
 ```
 
-**Why use arenas from other languages?**
-- **Interop**: Share data with C extensions zero-copy
-- **Hot-reload safety**: Arena-allocated data persists across reloads
-- **Performance**: Cache-friendly allocations
+Supported languages: Rust, Zig, C++, Odin - anything with C FFI. Build as DLL, place in Flight's build directory, and the engine loads it automatically.
 
-**Or don't!** Use Rust's heap, Zig's allocators, C++ `new` - Flight doesn't care. Your plugin, your choice.
+You can use Flight's arenas from any language via the Platform API, or use your language's native allocator.
 
 ## Memory Management
 
-Flight uses a **fully arena-based** memory system where `malloc`/`free` are discouraged:
+Flight uses arena-based memory exclusively:
 
-### The One Root Arena
-Platform creates a single Virtual arena (4GB reserved, commits pages on demand) at startup. All memory chains from this root.
+**Arena Types:**
+- **Virtual**: OS-backed root (commits pages on demand)
+- **Bump**: Linear allocator, reset frees everything
+- **Stack**: Push/pop with save/restore markers
+- **Block/Multi-pool/Scratch**: Coming soon
 
-### Arena Types
-
-- **Virtual**: OS-backed root arena (platform-owned, commits memory as needed)
-- **Bump**: Linear allocator for long-lived data (reset frees everything)
-- **Stack**: Like Bump but with save/restore markers for scoped temps
-- **Block**: Fixed-size pools for entities, particles, etc. *(coming soon)*
-- **Multi-pool**: Power-of-2 size classes for general allocation *(coming soon)*
-- **Scratch**: Thread-local temps for hot paths *(coming soon)*
-
-### Usage Patterns
+**Usage:**
 
 ```c
-// Get root from platform
 Arena* root = PLATFORM_GET_ROOT_ARENA();
+Arena* game_arena = ARENA_CREATE_BUMP(root, MEGABYTES(256), DEFAULT_ALIGNMENT);
 
-// Create persistent subsystem arena
-Arena* physics_arena = ARENA_CREATE_BUMP(root, MEGABYTES(64), DEFAULT_ALIGNMENT);
-ARENA_SET_DEBUG_NAME(physics_arena, "Physics");
+// Allocate
+void* data = ARENA_ALLOC(game_arena, 1024);
 
-// Create frame-temp arena (reset every frame)
-Arena* frame_arena = ARENA_CREATE_STACK(physics_arena, MEGABYTES(4), DEFAULT_ALIGNMENT);
-
-// Allocate objects
-RigidBody* body = ARENA_ALLOC(physics_arena, sizeof(RigidBody), DEFAULT_ALIGNMENT);
-
-// Temporary allocations (scoped)
+// Scoped temp allocations
 ARENA_TEMP(frame_arena) {
-    float* temp_buffer = ARENA_ALLOC(frame_arena, sizeof(float) * 1000, DEFAULT_ALIGNMENT);
-    // Use temp_buffer
-} // Automatically freed here
+    void* temp = ARENA_ALLOC(frame_arena, 512);
+    // Auto-freed at scope end
+}
 
-// Manual temp control
-ArenaMarker mark = ARENA_MARK(frame_arena);
-void* temp_data = ARENA_ALLOC(frame_arena, 512, DEFAULT_ALIGNMENT);
-// ... use temp_data ...
-ARENA_POP_TO(frame_arena, mark);  // Free back to marker
-
-// Reset entire arena
+// Reset or destroy
 ARENA_RESET(frame_arena);
-
-// Destroy arena and all children
-ARENA_DESTROY(physics_arena);
+ARENA_DESTROY(game_arena);  // Frees arena and all children
 ```
 
-### Benefits
+Benefits: no fragmentation, cache-friendly, hot-reload safe, fast, clear ownership.
 
-- **No fragmentation**: Linear allocation means perfect locality
-- **Cache friendly**: Related data packed together in memory
-- **Easy debugging**: Visualize entire memory tree from root
-- **Hot-reload safe**: Arena pointers persist across reloads
-- **Blazing fast**: Bump allocation is just pointer increment
-- **Clear ownership**: Parent arenas own their children
+## Shipping Your Game
 
-## Roadmap
+### Custom Presets
 
-### Immediate (In Progress)
-- [x] Hot reload system
-- [x] Multi-platform support (Windows, Linux, macOS, Web)
-- [x] Basic window/renderer abstraction
-- [x] Arena-based memory system (Virtual + Bump + Stack)
-- [x] Extension system foundation
-- [ ] Auto-generated extension registration
-- [ ] Auto-generated plugin macros
-- [ ] Block arena (object pools)
-- [ ] Input system
-
-### Near Term
-- [ ] Multi-pool arena (small block allocator)
-- [ ] Scratch arenas (thread-local temps)
-- [ ] Free-list + coalescing for Virtual arena
-- [ ] Extension dependency system
-- [ ] Extension API versioning
-- [ ] Basic 2D rendering utilities
-- [ ] Asset loading system
-
-### Future
-- [ ] Entity Component System (ECS)
-- [ ] Job system for multithreading
-- [ ] Advanced renderer abstraction (Vulkan/Metal/DX12)
-- [ ] Audio system
-- [ ] Physics integration
-- [ ] Networking
-
-## Shipping Configuration
-
-By default, plugins are development-only (hot-reload for iteration). But you can ship them as DLLs too.
-
-### Create Your Own Presets
-
-Make a `MyGamePresets.json` in your project (git-ignored or checked in, your choice):
+Create `MyGamePresets.json`:
 
 ```json
 {
     "version": 6,
     "include": ["CMakePresets.json"],
     "configurePresets": [{
-        "name": "my-game-release-modding",
-        "displayName": "Release with Modding",
+        "name": "my-game-release",
         "inherits": "windows-release",
         "cacheVariables": {
-            "ENABLE_GAME_AS_PLUGIN": "ON",
-			"ENABLE_HOT_RELOAD": "ON"
+            "SHIP_PLUGIN_GAME": "OFF"  // Single .exe
         }
-    }, {
-        "name": "my-game-release-static",
-        "displayName": "Release Single EXE",
-        "inherits": "windows-release",
-        "cacheVariables": {
-            "ENABLE_GAME_AS_PLUGIN": "OFF",
-			"ENABLE_HOT_RELOAD": "OFF"
-        }
-    }],
-    "buildPresets": [{
-        "name": "build-my-game-release-modding",
-        "configurePreset": "my-game-release-modding"
     }]
 }
 ```
 
-Then build:
-```bash
-cmake --preset my-game-release-modding
-cmake --build --preset build-my-game-release-modding
-```
+### Distribution Options
 
-### Shipping Options
-
-**Ship as DLL (`ENABLE_GAME_AS_PLUGIN: ON`):**
-```
-MyGame/
-├── /data               # The assets required for your game (optional)
-├── flight.exe          # Engine + extensions
-├── game.dll            # Your game
-```
-
-**Benefits:**
-- **Modding support**: Users can replace game.dll
-- **Live patching**: Update game.dll without touching engine
-- **Language flexibility**: Ship Rust/Zig/C++ games as DLLs
-
-**Cost:**
-- Multiple files to distribute
-- One indirect call per frame (negligible overhead)
-
-**Ship as static (`ENABLE_GAME_AS_PLUGIN: OFF`):**
-```
-MyGame/
-├── /data               # The assets required for your game (optional)
-├── flight.exe          # Engine + extensions + game (all baked in)
-```
-
-**Benefits:**
-- Single executable distribution
-- Zero DLL overhead (direct calls)
+**Static (SHIP_PLUGIN_GAME=OFF):**
+- Single executable
+- Maximum performance
 - Simpler deployment
 
-**Cost:**
-- Game must be C (for static linking)
-- No modding support
-- Full recompile to patch
+**Plugin (SHIP_PLUGIN_GAME=ON):**
+- Game ships as DLL alongside executable
+- Enables modding/patching
+- Multiple files to distribute
 
-### Which Should You Choose?
+## Roadmap
 
-**Ship as DLL if:**
-- You want modding/patching capability
-- You're using Rust/Zig/C++ for your game
-- You don't care about single-exe distribution
+### Current (In Progress)
+- [x] Hot reload system
+- [x] Multi-platform (Windows, Linux, macOS, Web)
+- [x] Arena memory (Virtual + Bump + Stack)
+- [ ] Auto-generated extension registration
+- [ ] Auto-generated plugin macros
+- [ ] Block arena
+- [ ] Input system
 
-**Ship as static if:**
-- You want single-exe simplicity
-- Maximum performance matters (though DLL overhead is ~nanoseconds)
-- You're comfortable with C
+### Near Term
+- Multi-pool arena, scratch arenas
+- Extension dependency/versioning
+- 2D rendering utilities
+- Asset loading
 
-Both are valid. Flight doesn't judge.
+### Future
+- ECS, job system
+- Advanced renderers (Vulkan/Metal/DX12)
+- Audio, physics, networking
 
-### Why not use an existing engine?
+## Key Questions
 
-Flight follows three rules that most engines don't:
+**When to make an extension?**
+- Multiple games would use it
+- It's a platform abstraction
+- Want it statically compiled for performance
 
-1. **Protect the Heart**: Small, clean C core. No language soup.
-2. **Developer Flexibility**: Hot-reload everything. Use any language for plugins.
-3. **Player Performance**: Zero-cost abstractions. Direct calls in release.
+If game-specific or experimental, keep it in your game code.
 
-This combination is unique. Unity/Unreal are monoliths. SDL/raylib are frameworks. Flight is a composable kernel.
+**Can I use third-party libraries?**
+Yes. Vendor them in your game (stb_image.h, Dear ImGui, Box2D, etc.). Extensions are for shared engine capabilities, not required for everything.
 
-### What about scripting?
+**How does hot-reload handle state?**
+Arena-allocated memory persists across reloads. Avoid storing function pointers or static variables in your state struct.
 
-Not planned initially. C gives you the performance and control needed for game engines. If scripting is needed later, it can be added as an extension.
+**Performance impact of hot-reload?**
+Development: ~1ns per API call (indirect through function pointer). Release: zero overhead (direct calls, compiler can inline).
 
-### How do I add a new extension?
+**Can I still use malloc?**
+Yes, but discouraged. Use arenas for game data, malloc only for interop with libraries that require it.
 
-1. Create `extensions/myext/myext_extension.c` (C only)
-2. Implement `ExtensionInterface` 
-3. Add extern declaration to `engine/src/static_manifest.c`
-4. Call `Engine_RegisterExtension(&g_extension_myext)` in `Engine_LoadStaticExtensions()`
-5. Create API header `myext_api.h` with your extension's functions
-6. Add macros to `shared/include/plugin_macros.h` for both hot-reload and static builds
-7. Rebuild
-
-*(Steps 3-6 will be automated by the build system in the future)*
-
-### Can I make commercial games with Flight?
-
-Yes! MIT license - do whatever you want. Attribution appreciated but not required.
+See [FAQ.md](FAQ.md) for more questions.
 
 ## License
 
@@ -682,7 +367,7 @@ MIT License - see [LICENSE](LICENSE) for details
 
 ## Contributing
 
-Flight is in early development. Contributions welcome, but expect rapid changes to core APIs until we hit 1.0.
+Flight is in early development. Contributions welcome, but expect rapid changes until 1.0.
 
 ---
 
