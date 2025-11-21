@@ -59,15 +59,6 @@ extern "C" {
 #define ARENA_GET_CAPACITY(arena) __platform_api()->ArenaGetCapacity(arena)
 #define ARENA_GET_USED(arena) __platform_api()->ArenaGetUsed(arena)
 
-// Engine macros (add as you implement features)
-// #define ENGINE_CREATE_ENTITY() __engine_api()->CreateEntity()
-// #define ENGINE_DESTROY_ENTITY(e) __engine_api()->DestroyEntity(e)
-
-// Engine Extension macros for hot reload build (PLACEHOLDER IMPLEMENTATION, not the way it will ultimately look.)
-#define TEST_LOG_HELLO() \
-  TestAPI* test = (TestAPI*)g_game_plugin.engine->GetExtensionAPI("Test"); \
-  if(test) test->LogHello()
-
 #else
 // Static build: direct function calls (zero overhead!)
 #include "platform.h"
@@ -111,13 +102,10 @@ extern "C" {
 #define ARENA_GET_CAPACITY Arena_GetCapacity
 #define ARENA_GET_USED Arena_GetUsed
 
-// Engine macros for static builds
-// #define ENGINE_CREATE_ENTITY Engine_CreateEntity
-
-// Engine Extension macros for static builds
-#define TEST_LOG_HELLO Test_LogHello
-
 #endif
+
+// Auto-generated engine extension macros
+#include "plugin_macros_generated.h"
 
 #ifdef __cplusplus
 }

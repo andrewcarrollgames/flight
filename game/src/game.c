@@ -103,6 +103,7 @@ void Game_Update(void *state, const float deltaTime) {
   static bool tested = false; // persists locally (this logic will only run on the first update)
   if (!tested) {
     TEST_LOG_HELLO();
+    TEST_LOG_WORLD();
     tested = true;
   }
 

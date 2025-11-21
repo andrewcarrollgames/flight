@@ -79,3 +79,6 @@ extern/emsdk/
 # OS
 .DS_Store
 Thumbs.db
+
+# Generated macro file
+shared/include/plugin_macros_generated.h

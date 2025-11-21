@@ -6,12 +6,19 @@ static PlatformAPI* g_platform = NULL;
 
 void Test_LogHello(void) {
   if (g_platform) {
-    g_platform->Log(">>> HELLO FROM STATIC EXTENSION! <<<");
+    g_platform->Log("Hello!");
+  }
+}
+
+void Test_LogWorld(void) {
+  if (g_platform) {
+    g_platform->Log("XOXO\n--Test_Extension");
   }
 }
 
 static TestAPI g_test_api = {
-  .LogHello = Test_LogHello
+  .LogHello = Test_LogHello,
+  .LogWorld = Test_LogWorld
 };
 
 // --- The Extension Interface ---

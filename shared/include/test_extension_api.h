@@ -6,6 +6,7 @@
 // --- The Specific API ---
 typedef struct TestAPI {
   void (*LogHello)(void);
+  void (*LogWorld)(void);
 } TestAPI;
 
 // forward declarations
@@ -16,6 +17,7 @@ typedef struct PlatformAPI PlatformAPI;
 extern "C" {
 #endif
   void Test_LogHello(void);
+  void Test_LogWorld(void);
   void* Test_GetSpecificAPI(void);
 #ifdef __cplusplus
 }
