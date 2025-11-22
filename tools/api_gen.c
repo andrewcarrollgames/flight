@@ -17,7 +17,7 @@
 #define MAX_FUNCTIONS 512
 #define MAX_NAME 256
 
-    typedef struct {
+typedef struct {
   char return_type[MAX_NAME];
   char function_name[MAX_NAME];       // Full: "Test_LogHello"
   char prefix[MAX_NAME];              // Extracted: "Test"
@@ -161,8 +161,7 @@ int scan_source_file(const char *filepath, ExtensionAPI *api, const char *filena
       // First function sets the extension name
       if (api->extension_name[0] == '\0') {
         strcpy(api->extension_name, func.prefix);
-        printf("  Detected extension name: '%s' from %s\n",
-               api->extension_name, func.function_name);
+        printf("  Detected extension name: '%s' from %s\n", api->extension_name, func.function_name);
       }
 
       // Validate prefix matches extension name
@@ -308,15 +307,13 @@ void generate_api_header(ExtensionAPI *api, const char *output_path) {
 }
 
 int main(int argc, char **argv) {
+  setbuf(stdout, NULL);
   if (argc < 3) {
     fprintf(stderr, "Usage: api_gen <source_dir> <output_file>\n");
-    fprintf(stderr, "\n");
     fprintf(stderr, "Scans <source_dir> for .c files containing EXTENSION_API functions\n");
     fprintf(stderr, "and generates an API header at <output_file>.\n");
-    fprintf(stderr, "\n");
     fprintf(stderr, "Example:\n");
     fprintf(stderr, "  api_gen extensions/test shared/include/test_extension_api.h\n");
-    fprintf(stderr, "\n");
     return 1;
   }
 
@@ -404,16 +401,12 @@ int main(int argc, char **argv) {
 #endif
 
   if (api->function_count == 0) {
-    fprintf(stderr, "\n");
     fprintf(stderr, "Warning: No EXTENSION_API functions found in %s\n", source_dir);
-    fprintf(stderr, "\n");
     fprintf(stderr, "Make sure your functions are marked with EXTENSION_API:\n");
     fprintf(stderr, "  EXTENSION_API void MyExt_DoSomething(int param) { ... }\n");
-    fprintf(stderr, "\n");
     return 1;
   }
 
-  printf("\n");
   printf("Generating API header...\n");
   printf("  Extension: %s\n", api->extension_name);
   printf("  Functions: %d\n", api->function_count);
@@ -421,6 +414,6 @@ int main(int argc, char **argv) {
 
   generate_api_header(api, output_file);
   free(api);
-  printf("\nSuccess!\n");
+  printf("Success!\n");
   return 0;
 }

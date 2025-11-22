@@ -82,4 +82,6 @@ Thumbs.db
 
 # Generated macro file
 shared/include/plugin_macros_generated.h
-shared/include/test_extension_api.h
+
+# Generated api files
+shared/include/*_extension_api.h
