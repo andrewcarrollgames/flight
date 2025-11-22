@@ -6,19 +6,26 @@ set(EXECUTABLE_NAME ${PROJECT_NAME})
 # Enable PIC globally for all static libraries
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Catch the case where Hot reload was enabled, but we forgot to enable game as a plugin
 if(${ENABLE_HOT_RELOAD})
     message("flight/CMakeLists: Hot reload enabled for this configuration. Turn on 'ENABLE_GAME_AS_PLUGIN'.")
     set(ENABLE_GAME_AS_PLUGIN ON)
 endif()
 
-# platform is our entry point (will instantiate and update engine)
-add_subdirectory(platform)
+# ============================================================================
+# STEP 1: Build code generation tools FIRST
+# ============================================================================
+add_subdirectory(tools)
 
-# Persistent/shared data between the engine and game (supports hot reload)
+# ============================================================================
+# STEP 2: Generate extension APIs and macros
+# ============================================================================
+add_subdirectory(extensions)
+
+# ============================================================================
+# STEP 3: Build core (depends on generated headers)
+# ============================================================================
 add_subdirectory(shared)
-
-# Check/assign platform variables here (or pass from config, maybe?)
+add_subdirectory(platform)
 add_subdirectory(engine)
-
-# Simulation code for the game (the piece that can be hot reloaded)
 add_subdirectory(game)

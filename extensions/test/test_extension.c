@@ -4,13 +4,13 @@
 
 static PlatformAPI* g_platform = NULL;
 
-void Test_LogHello(void) {
+EXTENSION_API void Test_LogHello(void) {
   if (g_platform) {
     g_platform->Log("Hello!");
   }
 }
 
-void Test_LogWorld(void) {
+EXTENSION_API void Test_LogWorld(void) {
   if (g_platform) {
     g_platform->Log("XOXO\n--Test_Extension");
   }
