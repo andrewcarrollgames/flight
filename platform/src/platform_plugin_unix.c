@@ -77,7 +77,7 @@ void Platform_PluginUnload(PlatformPlugin *plugin) {
   // Delete temp file
   unlink(plugin->temp_path);
 
-  free(plugin);
+  // TODO: (ARC) Properly free the plugin* from the arena when Root has free-list capability.
 }
 
 void *Platform_PluginGetSymbol(PlatformPlugin *plugin, const char *name) {
