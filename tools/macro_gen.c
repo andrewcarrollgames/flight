@@ -362,7 +362,7 @@ int main(int argc, char** argv) {
     fprintf(out, "// Extensions: %d, Functions: %d\n\n", extension_count, total_functions);
     fprintf(out, "#ifndef PLUGIN_MACROS_GENERATED_H\n");
     fprintf(out, "#define PLUGIN_MACROS_GENERATED_H\n\n");
-    fprintf(out, "#ifdef ENABLE_HOT_RELOAD\n\n");
+    fprintf(out, "#ifdef ENABLE_GAME_AS_PLUGIN\n\n");
 
     // Copy hot-reload macros
     rewind(temp_hot);
@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
         fputs(buffer, out);
     }
 
-    fprintf(out, "#endif // ENABLE_HOT_RELOAD\n\n");
+    fprintf(out, "#endif // ENABLE_GAME_AS_PLUGIN\n\n");
     fprintf(out, "#endif // PLUGIN_MACROS_GENERATED_H\n");
 
     fclose(out);
