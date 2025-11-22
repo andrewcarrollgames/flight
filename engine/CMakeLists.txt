@@ -1,10 +1,12 @@
 project(engine LANGUAGES C)
 
+get_property(EXTENSION_SOURCES GLOBAL PROPERTY FLIGHT_EXTENSION_SOURCES)
+
 add_library(engine STATIC
     src/engine.c
     src/plugin_manager.c
     src/static_manifest.c
-    ../extensions/test/test_extension.c # THIS LINE IS THE ONLY WAY I GET THE SYMBOL
+    ${EXTENSION_SOURCES}
     include/plugin_manager.h
 )
 

@@ -5,6 +5,11 @@ add_library(test_extension STATIC
     test_extension.c
 )
 
+# Add the source file to the global list
+set_property(GLOBAL APPEND PROPERTY FLIGHT_EXTENSION_SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/test_extension.c"
+)
+
 target_include_directories(test_extension PUBLIC
     ${CMAKE_SOURCE_DIR}/shared/include
 )
